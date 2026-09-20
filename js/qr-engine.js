@@ -5,10 +5,18 @@
 const QREngine = {
   /**
    * Tạo URL cho trang đọc thơ di động (reader.html)
-   * Sử dụng LZString (nếu có) hoặc encodeURIComponent để nhúng dữ liệu trực tiếp vào URL
+   * Toàn bộ nội dung bài thơ được nén trực tiếp vào URL (#p=...), tồn tại vĩnh viễn không hết hạn
    */
   generateReaderUrl(poem) {
-    const baseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/, '') + 'reader.html';
+    let baseUrl = '';
+    
+    // 1. Nếu chạy trên web online (HTTP/HTTPS)
+    if (window.location.protocol.startsWith('http')) {
+      baseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/, '') + 'reader.html';
+    } else {
+      // 2. Nếu mở file offline trực tiếp (file:///), tự động trỏ về GitHub Pages để in ra QR quét được trên mọi điện thoại
+      baseUrl = 'https://huynd1995.github.io/MNPH/reader.html';
+    }
     
     // Tạo payload thu gọn
     const payload = {
