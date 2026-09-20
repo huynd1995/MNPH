@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tạo Thẻ Bìa Bài Thơ & QR Code A5 Mầm Non</title>
+  
+  <!-- Google Fonts: Quicksand & Nunito -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Quicksand:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Main Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/print.css">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- LZString for URL Compression -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+  <!-- HTML2Canvas for PNG Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <!-- Header Bar -->
+  <header class="app-header">
+    <div class="brand-container">
+      <div class="brand-icon">
+        <i data-lucide="sparkles"></i>
+      </div>
+      <div>
+        <h1 class="brand-title">Tạo Thẻ Học Liệu Bài Thơ A5</h1>
+        <p class="brand-subtitle">Ứng dụng tạo thẻ bìa QR thơ & nhạc thiếu nhi chuẩn khổ A5 ngang</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" id="btnApiKeySettings" title="Cấu hình Gemini API Key">
+        <i data-lucide="key" style="color: #ec4899;"></i>
+        <span>Cài đặt API Key</span>
+        <span class="status-dot" id="apiStatusDot"></span>
+      </button>
+      <button class="btn btn-outline" id="btnPreviewPhone" title="Mở giả lập điện thoại">
+        <i data-lucide="smartphone"></i>
+        <span>Xem trước bài thơ</span>
+      </button>
+      <button class="btn btn-outline" id="btnDownloadPng" title="Xuất ảnh thẻ A5 định dạng PNG">
+        <i data-lucide="image"></i>
+        <span>Tải ảnh PNG</span>
+      </button>
+      <button class="btn btn-primary" id="btnPrint" title="In trực tiếp hoặc Lưu PDF khổ A5">
+        <i data-lucide="printer"></i>
+        <span>In thẻ A5</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <!-- Left Editor Sidebar -->
+    <aside class="editor-sidebar">
+      <!-- Search & Autocomplete with AI Grounding -->
+      <div class="section-card">
+        <div class="section-title" style="justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="search" style="color: var(--primary);"></i>
+            <span>Tra cứu bài thơ mầm non</span>
+          </div>
+          <span class="ai-badge" id="searchModeBadge" title="Hỗ trợ tra cứu bằng AI">
+            <i data-lucide="bot" style="width: 12px; height: 12px;"></i>
+            <span>Gemini AI</span>
+          </span>
+        </div>
+        <div class="form-group search-container">
+          <div class="search-input-group">
+            <div style="position: relative; flex: 1;">
+              <i data-lucide="search" class="search-icon" style="width: 18px; height: 18px;"></i>
+              <input type="text" id="searchPoemInput" class="form-input search-input" placeholder="Gõ tên bài, câu thơ bất kỳ hoặc từ khóa..." autocomplete="off">
+            </div>
+            <button class="btn-ai-search" id="btnAiSearch" title="Tra cứu trực tuyến bằng Gemini AI">
+              <i data-lucide="sparkles" style="width: 14px; height: 14px;" id="aiSearchIcon"></i>
+              <span id="aiSearchText">Tìm AI</span>
+            </button>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.8rem;">
+            <span style="color: #64748b;" id="apiHelperText">Trạng thái: AI Sẵn Sàng</span>
+            <button type="button" id="btnInlineApiKey" style="background: none; border: none; color: #4f46e5; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px; border-radius: 4px;">
+              <i data-lucide="key" style="width: 13px; height: 13px; color: #db2777;"></i>
+              <span>Thêm / Đổi API Key</span>
+            </button>
+          </div>
+          <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
+        </div>
+      </div>
+
+      <!-- Mode Selector (1 QR or 2 QR) -->
+      <div class="section-card">
+        <div class="section-title">
+          <i data-lucide="qr-code" style="color: var(--primary);"></i>
+          <span>Chế độ hiển thị mã QR</span>
+        </div>
+        <div class="toggle-group">
+          <button class="toggle-btn" id="btnToggle1QR">
+            <i data-lucide="square" style="width: 16px; height: 16px;"></i>
+            <span>1 Mã QR To</span>
+          </button>
+          <button class="toggle-btn active" id="btnToggle2QR">
+            <i data-lucide="columns-2" style="width: 16px; height: 16px;"></i>
+            <span>2 Mã QR Song Song</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Poem Details Form -->
+      <div class="section-card">
+        <div class="section-title">
+          <i data-lucide="book-open" style="color: var(--primary);"></i>
+          <span>Soạn thảo bài thơ</span>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="inputPoemTitle">Tên bài thơ</label>
+          <input type="text" id="inputPoemTitle" class="form-input" placeholder="Nhập tên bài thơ...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="inputPoemAuthor">Tác giả</label>
+          <input type="text" id="inputPoemAuthor" class="form-input" placeholder="Tác giả hoặc Sưu tầm...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="inputPoemContent">Toàn văn bài thơ</label>
+          <textarea id="inputPoemContent" class="form-textarea" placeholder="Nhập lời thơ (từng khổ thơ)..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tranh minh họa bài thơ</label>
+          <input type="text" id="inputCoverImage" class="form-input" placeholder="URL hình ảnh minh họa...">
+          <div class="image-preview-wrapper">
+            <img id="imagePreviewThumb" class="image-thumb" src="" alt="Thumbnail preview">
+            <div class="image-actions">
+              <input type="file" id="inputImageFile" class="file-input-hidden" accept="image/*">
+              <button class="btn btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" id="btnUploadImage">
+                <i data-lucide="upload" style="width: 14px; height: 14px;"></i>
+                <span>Tải ảnh từ máy tính</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- YouTube & Media Section -->
+      <div class="section-card">
+        <div class="section-title">
+          <i data-lucide="youtube" style="color: #ef4444;"></i>
+          <span>Nhạc thiếu nhi YouTube</span>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="inputYoutubeUrl">Đường link YouTube bài hát</label>
+          <input type="text" id="inputYoutubeUrl" class="form-input" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="inputYoutubeTitle">Tiêu đề bài hát</label>
+          <input type="text" id="inputYoutubeTitle" class="form-input" placeholder="VD: Nhạc: Nhà Của Tôi">
+        </div>
+      </div>
+
+      <!-- Big Action: Generate & Update QR Button -->
+      <div class="section-card action-card">
+        <button type="button" class="btn-generate-main" id="btnGenerateQR" title="Tạo hoặc vẽ lại toàn bộ mã QR từ bài thơ và YouTube">
+          <i data-lucide="sparkles" style="width: 20px; height: 20px;"></i>
+          <span>TẠO & CẬP NHẬT MÃ QR</span>
+        </button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
+          <button type="button" class="btn btn-outline btn-sm" id="btnRefreshPreview">
+            <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+            <span>Làm mới QR</span>
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" id="btnQuickSample">
+            <i data-lucide="shuffle" style="width: 14px; height: 14px;"></i>
+            <span>Đổi bài mẫu</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Simple & Clean QR Customization Section -->
+      <div class="section-card">
+        <div class="section-title">
+          <i data-lucide="palette" style="color: #ec4899;"></i>
+          <span>Kiểu dáng & Màu sắc mã QR</span>
+        </div>
+
+        <!-- 1. Color Themes (5 Chủ Đề Màu Đẹp) -->
+        <div class="form-group">
+          <label class="form-label">Chọn nhanh bộ màu mầm non</label>
+          <div class="theme-pill-grid">
+            <button type="button" class="theme-pill active" data-theme="default" title="Chuẩn Mầm Non (Xanh & Hồng Đỏ)">
+              <div class="theme-dots">
+                <span style="background: #1d4ed8;"></span>
+                <span style="background: #be123c;"></span>
+              </div>
+              <span class="theme-name">Chuẩn</span>
+            </button>
+            <button type="button" class="theme-pill" data-theme="nature" title="Thiên Nhiên (Xanh Lá & Cam)">
+              <div class="theme-dots">
+                <span style="background: #15803d;"></span>
+                <span style="background: #c2410c;"></span>
+              </div>
+              <span class="theme-name">Thiên nhiên</span>
+            </button>
+            <button type="button" class="theme-pill" data-theme="pastel" title="Kẹo Ngọt (Tím & Hồng Phấn)">
+              <div class="theme-dots">
+                <span style="background: #7c3aed;"></span>
+                <span style="background: #db2777;"></span>
+              </div>
+              <span class="theme-name">Kẹo ngọt</span>
+            </button>
+            <button type="button" class="theme-pill" data-theme="ocean" title="Đại Dương (Xanh Lam & Ngọc)">
+              <div class="theme-dots">
+                <span style="background: #0284c7;"></span>
+                <span style="background: #0d9488;"></span>
+              </div>
+              <span class="theme-name">Đại dương</span>
+            </button>
+            <button type="button" class="theme-pill" data-theme="mono" title="Đen Trắng (Tiết kiệm mực in)">
+              <div class="theme-dots">
+                <span style="background: #111827;"></span>
+                <span style="background: #374151;"></span>
+              </div>
+              <span class="theme-name">Đen trắng</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Tùy chỉnh màu sắc tối giản (Chỉ 2 màu chính) -->
+        <div class="form-group">
+          <label class="form-label">Tùy chỉnh 2 màu chủ đạo</label>
+          <div class="simple-color-grid">
+            <div class="simple-color-box">
+              <input type="color" id="colorQrPoem" class="color-picker-simple" value="#1d4ed8">
+              <div class="simple-color-info">
+                <span class="simple-color-title">QR Bài thơ</span>
+                <span class="simple-color-desc">Khung 1 (hoặc QR đơn)</span>
+              </div>
+            </div>
+            <div class="simple-color-box">
+              <input type="color" id="colorQrMusic" class="color-picker-simple" value="#be123c">
+              <div class="simple-color-info">
+                <span class="simple-color-title">QR YouTube</span>
+                <span class="simple-color-desc">Khung 2 (Nhạc)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Kiểu dáng góc bo thẻ A5 -->
+        <div class="form-group">
+          <label class="form-label">Kiểu bo góc khung A5</label>
+          <div class="shape-selector">
+            <button type="button" class="btn-shape active" data-radius="28" id="btnRadiusRound">
+              <span class="shape-preview shape-round"></span>
+              <span>Bo tròn mềm</span>
+            </button>
+            <button type="button" class="btn-shape" data-radius="14" id="btnRadiusSemi">
+              <span class="shape-preview shape-semi"></span>
+              <span>Bo nhẹ</span>
+            </button>
+            <button type="button" class="btn-shape" data-radius="0" id="btnRadiusSquare">
+              <span class="shape-preview shape-square"></span>
+              <span>Khung vuông</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. Chữ phụ đề & Kích cỡ -->
+        <div class="form-group">
+          <label class="form-label" for="inputPoemSubtitle">Chữ phụ đề QR 1 (Bài thơ)</label>
+          <input type="text" id="inputPoemSubtitle" class="form-input" value="Xem tranh bài thơ">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="inputMusicSubtitle">Chữ phụ đề QR 2 (Nhạc YouTube)</label>
+          <input type="text" id="inputMusicSubtitle" class="form-input" value="Nghe nhạc YouTube">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="inputSingleSubtitle" style="display:none;">Phụ đề QR đơn</label>
+          <input type="hidden" id="inputSingleSubtitle" value="Xem tranh bài thơ">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="selectSubtitleFontSize">Kích cỡ chữ phụ đề</label>
+          <select id="selectSubtitleFontSize" class="form-select">
+            <option value="18px">Nhỏ vừa (18px)</option>
+            <option value="20px" selected>Vừa chuẩn (20px)</option>
+            <option value="24px">Lớn nổi bật (24px)</option>
+            <option value="28px">Rất lớn (28px)</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn btn-outline" id="btnResetStyles" style="width: 100%; font-size: 0.82rem; margin-top: 4px;">
+          <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i>
+          <span>Khôi phục mặc định</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Right Live A5 Sheet Preview -->
+    <main class="preview-area">
+      <div class="preview-toolbar">
+        <span class="toolbar-label">
+          <i data-lucide="eye" style="width: 16px; height: 16px; color: var(--primary);"></i>
+          <span>Bản xem trước Khổ A5 Ngang (210mm x 148mm)</span>
+        </span>
+      </div>
+
+      <!-- Scaled Container for Responsive View -->
+      <div class="a5-container-scaler" id="a5Scaler">
+        <!-- Exact A5 Sheet (794px x 559px @ 96DPI) - Removed Header Title as Requested -->
+        <div class="a5-sheet" id="a5Sheet">
+          <!-- Central QR Area -->
+          <div class="a5-body">
+            <!-- Mode 1: Single Large QR -->
+            <div class="qr-layout-single" id="layoutSingle" style="display: none;">
+              <div class="qr-card-single" id="cardSingle">
+                <div class="qr-box-single" id="qrSingleContainer"></div>
+                <div class="qr-subtitle-single" id="subtitleSingleDisplay">Xem tranh bài thơ</div>
+              </div>
+            </div>
+
+            <!-- Mode 2: Dual QR Side-by-Side -->
+            <div class="qr-layout-dual" id="layoutDual">
+              <!-- Left: Poem Card -->
+              <div class="qr-card-poem" id="cardPoem">
+                <div class="qr-box-poem" id="qrPoemContainer"></div>
+                <div class="qr-subtitle-poem" id="subtitlePoemDisplay">Xem tranh bài thơ</div>
+              </div>
+
+              <!-- Right: Music Card -->
+              <div class="qr-card-music" id="cardMusic">
+                <div class="qr-box-music" id="qrMusicContainer"></div>
+                <div class="qr-subtitle-music" id="subtitleMusicDisplay">Nghe nhạc YouTube</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Phone Preview Modal -->
+  <div class="modal-overlay" id="phoneModal">
+    <div class="phone-mockup-wrapper">
+      <button class="modal-close-btn" id="btnCloseModal" title="Đóng">&times;</button>
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <iframe id="phoneIframe" class="phone-iframe" src="about:blank"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Key Settings Modal -->
+  <div class="modal-overlay" id="apiKeyModal">
+    <div style="background: white; border-radius: 20px; padding: 24px; width: 100%; max-width: 480px; box-shadow: var(--shadow-lg); position: relative;">
+      <button class="modal-close-btn" id="btnCloseApiKeyModal" title="Đóng">&times;</button>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <div style="width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #fdf2f8, #f5f3ff); color: #db2777; display: flex; align-items: center; justify-content: center; border: 1px solid #fbcfe8;">
+          <i data-lucide="key" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div>
+          <h3 style="font-family: var(--font-heading); font-size: 1.2rem; color: #1e293b; font-weight: 700;">Cấu Hình Gemini API Key</h3>
+          <p style="font-size: 0.8rem; color: #64748b;">Kích hoạt tra cứu thông minh Google Search Grounding</p>
+        </div>
+      </div>
+      
+      <p style="font-size: 0.85rem; color: #475569; line-height: 1.5; margin-bottom: 14px; background: #f8fafc; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
+        💡 Nhập <strong>Google Gemini API Key</strong> để tìm kiếm bất kỳ bài thơ nào trên internet mà không cần database. Bạn có thể <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #4f46e5; font-weight: 700; text-decoration: underline;">lấy API Key miễn phí tại đây</a>.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label" for="inputApiKey">Gemini API Key</label>
+        <div style="position: relative; display: flex; align-items: center;">
+          <input type="password" id="inputApiKey" class="form-input" placeholder="AIzaSy..." style="padding-right: 40px;">
+          <button type="button" id="btnToggleApiKeyVisibility" style="position: absolute; right: 8px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px;" title="Ẩn/Hiện API Key">
+            <i data-lucide="eye" style="width: 18px; height: 18px;" id="iconApiKeyVisibility"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="apiKeyTestStatus" style="display: none; margin-top: 10px; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;"></div>
+
+      <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-top: 20px;">
+        <button class="btn btn-outline" id="btnClearApiKey" style="color: #ef4444; border-color: #fecaca;" title="Xóa API Key khỏi trình duyệt">
+          <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i>
+          <span>Xóa Key</span>
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-outline" id="btnTestApiKeyOnly" title="Kiểm tra xem API Key có hoạt động không">
+            <i data-lucide="zap" style="width: 15px; height: 15px; color: #f59e0b;"></i>
+            <span>Kiểm tra</span>
+          </button>
+          <button class="btn btn-primary" id="btnSaveApiKey">
+            <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+            <span>Lưu API Key</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Application Scripts -->
+  <script src="js/poems-data.js"></script>
+  <script src="js/qr-engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
