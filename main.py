@@ -230,8 +230,8 @@ async def test_api_key(req: ApiKeyUpdateRequest):
                 ]
                 
                 # Tìm model tối ưu nhất
-                preferred = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-pro"]
-                chosen_model = next((m for m in preferred if m in supported), supported[0] if supported else "gemini-1.5-flash")
+                preferred = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-3.7-flash"]
+                chosen_model = next((m for m in preferred if m in supported), supported[0] if supported else "gemini-2.5-flash")
                 
                 return {
                     "status": "success",
@@ -247,7 +247,7 @@ async def test_api_key(req: ApiKeyUpdateRequest):
         # Fallback thử gửi nội dung trực tiếp
         pass
 
-    candidate_models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-pro"]
+    candidate_models = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-3.7-flash"]
     last_error = "Không thể kết nối tới Google"
 
     for model_name in candidate_models:
@@ -271,7 +271,7 @@ async def test_api_key(req: ApiKeyUpdateRequest):
 async def call_gemini_rest(api_key: str, prompt: str) -> Optional[str]:
     """Gọi trực tiếp Google Gemini REST API qua httpx, hỗ trợ nhiều model ổn định"""
     import httpx
-    candidate_models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-pro"]
+    candidate_models = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-3.7-flash"]
     
     for model_name in candidate_models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"

@@ -1230,7 +1230,7 @@ function setAiSearchLoading(isLoading) {
 }
 
 /**
- * Gọi trực tiếp Gemini API client-side
+ * Gọi trực tiếp Gemini API client-side (Hỗ trợ Gemini 2.5 Flash & Fallbacks)
  */
 async function directGeminiSearch(query, apiKey) {
   const prompt = `Bạn là chuyên gia về thơ ca mầm non Việt Nam. Hãy tìm kiếm chính xác bài thơ mầm non theo yêu cầu: "${query}".
@@ -1245,24 +1245,41 @@ Trả về kết quả duy nhất ở định dạng JSON hợp lệ (không kè
   "youtubeTitle": "Tiêu đề bài hát hiển thị"
 }`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: "application/json" }
-    })
-  });
+  const candidateModels = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-3.7-flash'];
+  let lastError = null;
 
-  if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.statusText}`);
+  for (const model of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) {
+          const cleanJson = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+          return JSON.parse(cleanJson);
+        }
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        lastError = errData.error?.message || response.statusText;
+        console.warn(`Model ${model} returned error: ${lastError}, trying next...`);
+      }
+    } catch (e) {
+      lastError = e.message;
+      console.warn(`Model ${model} fetch failed:`, e);
+    }
   }
 
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (text) {
-    return JSON.parse(text);
+  if (lastError) {
+    throw new Error(lastError);
   }
   return null;
 }
