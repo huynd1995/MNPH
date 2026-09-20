@@ -204,6 +204,9 @@ const DOM = {
  * Khởi tạo ứng dụng
  */
 function initApp() {
+  if (window.lucide) {
+    lucide.createIcons();
+  }
   bindEvents();
   loadInitialPoem();
   setupResponsiveScale();
