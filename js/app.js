@@ -1,5 +1,5 @@
 /**
- * Kindergarten A5 Poem & Media QR Card Generator - Main Application Controller
+ * Kindergarten A4 & A5 Poem & Media QR Card Generator - Main Application Controller
  */
 
 // Preset Theme Palettes
@@ -84,17 +84,24 @@ Cười trong nắng vàng.`,
   coverImage: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=800&q=80',
   youtubeUrl: 'https://www.youtube.com/watch?v=F0f18y4Jt9I',
   youtubeTitle: 'Nhạc: Nhà Của Tôi',
+  
+  // Format & Mode
+  paperFormat: 'a4', // 'a4' or 'a5'
   qrMode: '2', // '1' or '2'
+  qrSizeLevel: 'large', // 'normal', 'large', 'xlarge'
+  qrScaleMultiplier: 1.0, // 0.8 to 1.35
+  
   singleSubtitle: 'Xem tranh bài thơ',
   poemSubtitle: 'Xem tranh bài thơ',
   musicSubtitle: 'Nghe nhạc YouTube',
   scale: 1,
   activeModel: 'gemini-1.5-flash',
+  mobileView: 'editor', // 'editor' or 'preview'
 
   // Style Settings
   theme: 'default',
   cardRadius: '28px',
-  subtitleFontSize: '20px',
+  subtitleFontSize: '24px',
   colorQrPoem: '#1d4ed8',
   colorTextPoem: '#1e40af',
   colorBgPoem: '#eff6ff',
@@ -107,6 +114,14 @@ Cười trong nắng vàng.`,
 
 // DOM Elements Cache
 const DOM = {
+  // Navigation & Tabs
+  sidebarTabBtns: document.querySelectorAll('.sidebar-tab-btn'),
+  tabPanels: document.querySelectorAll('.tab-panel'),
+  btnMobileTabEdit: document.getElementById('btnMobileTabEdit'),
+  btnMobileTabPreview: document.getElementById('btnMobileTabPreview'),
+  btnMobileBackToEdit: document.getElementById('btnMobileBackToEdit'),
+  mobilePaperLabel: document.getElementById('mobilePaperLabel'),
+  
   // Search & Autocomplete
   searchInput: document.getElementById('searchPoemInput'),
   autocompleteDropdown: document.getElementById('autocompleteDropdown'),
@@ -144,6 +159,14 @@ const DOM = {
   youtubeUrlInput: document.getElementById('inputYoutubeUrl'),
   youtubeTitleInput: document.getElementById('inputYoutubeTitle'),
   
+  // Paper Size & QR Sizing Controls
+  btnPaperA4: document.getElementById('btnPaperA4'),
+  btnPaperA5: document.getElementById('btnPaperA5'),
+  qrSizePresetBtns: document.querySelectorAll('.size-preset-btn'),
+  qrSizeSlider: document.getElementById('qrSizeSlider'),
+  qrSizeSliderVal: document.getElementById('qrSizeSliderVal'),
+  qrSizeDisplayBadge: document.getElementById('qrSizeDisplayBadge'),
+  
   // Big Action Buttons
   btnGenerateQR: document.getElementById('btnGenerateQR'),
   btnRefreshPreview: document.getElementById('btnRefreshPreview'),
@@ -168,10 +191,15 @@ const DOM = {
   btnToggle1QR: document.getElementById('btnToggle1QR'),
   btnToggle2QR: document.getElementById('btnToggle2QR'),
   
-  // A5 Sheet Preview Elements
-  a5Sheet: document.getElementById('a5Sheet'),
-  a5Scaler: document.getElementById('a5Scaler'),
-  a5TitleDisplay: document.getElementById('a5TitleDisplay'),
+  // Sheet Preview Elements
+  previewArea: document.getElementById('previewArea'),
+  sheetViewport: document.getElementById('sheetViewport'),
+  sheetScaler: document.getElementById('sheetScaler'),
+  printSheet: document.getElementById('printSheet'),
+  previewToolbarTitle: document.getElementById('previewToolbarTitle'),
+  paperBadgePill: document.getElementById('paperBadgePill'),
+  btnPrintText: document.getElementById('btnPrintText'),
+  btnMobilePrintText: document.getElementById('btnMobilePrintText'),
   
   // Layout Containers & Cards
   layoutSingle: document.getElementById('layoutSingle'),
@@ -185,7 +213,7 @@ const DOM = {
   qrPoemContainer: document.getElementById('qrPoemContainer'),
   qrMusicContainer: document.getElementById('qrMusicContainer'),
   
-  // A5 Subtitle Displays
+  // Subtitle Displays
   subtitleSingleDisplay: document.getElementById('subtitleSingleDisplay'),
   subtitlePoemDisplay: document.getElementById('subtitlePoemDisplay'),
   subtitleMusicDisplay: document.getElementById('subtitleMusicDisplay'),
@@ -193,6 +221,8 @@ const DOM = {
   // Actions & Modals
   btnPrint: document.getElementById('btnPrint'),
   btnDownloadPng: document.getElementById('btnDownloadPng'),
+  btnMobilePrint: document.getElementById('btnMobilePrint'),
+  btnMobileDownloadPng: document.getElementById('btnMobileDownloadPng'),
   btnPreviewPhone: document.getElementById('btnPreviewPhone'),
   phoneModal: document.getElementById('phoneModal'),
   btnCloseModal: document.getElementById('btnCloseModal'),
@@ -207,11 +237,29 @@ function initApp() {
   if (window.lucide) {
     lucide.createIcons();
   }
+  document.body.classList.add('mobile-view-editor');
   bindEvents();
   loadInitialPoem();
+  setPaperFormat('a4'); // Mặc định A4
   setupResponsiveScale();
   checkApiHealth();
-  window.addEventListener('resize', setupResponsiveScale);
+  
+  // Lắng nghe resize và orientationchange để auto-scale điện thoại mượt mà
+  window.addEventListener('resize', debounce(setupResponsiveScale, 100));
+  window.addEventListener('orientationchange', () => {
+    setTimeout(setupResponsiveScale, 200);
+  });
+}
+
+/**
+ * Tiện ích Debounce
+ */
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
 }
 
 /**
@@ -221,7 +269,7 @@ function loadInitialPoem() {
   if (typeof POEMS_DATABASE !== 'undefined' && POEMS_DATABASE.length > 0) {
     selectPoem(POEMS_DATABASE[0]);
   } else {
-    updateA5Card();
+    updateCardDisplay();
   }
 }
 
@@ -229,7 +277,28 @@ function loadInitialPoem() {
  * Gán sự kiện tương tác
  */
 function bindEvents() {
-  // 1. Tìm kiếm & Gợi ý (Autocomplete & AI Search)
+  // 1. Chuyển Tab Sidebar (Nội Dung vs Khổ Giấy & QR)
+  if (DOM.sidebarTabBtns) {
+    DOM.sidebarTabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.getAttribute('data-tab');
+        switchSidebarTab(targetTab);
+      });
+    });
+  }
+
+  // Mobile View Navigation Toggle
+  if (DOM.btnMobileTabEdit) {
+    DOM.btnMobileTabEdit.addEventListener('click', () => setMobileView('editor'));
+  }
+  if (DOM.btnMobileTabPreview) {
+    DOM.btnMobileTabPreview.addEventListener('click', () => setMobileView('preview'));
+  }
+  if (DOM.btnMobileBackToEdit) {
+    DOM.btnMobileBackToEdit.addEventListener('click', () => setMobileView('editor'));
+  }
+
+  // 2. Tìm kiếm & Gợi ý (Autocomplete & AI Search)
   if (DOM.searchInput) {
     DOM.searchInput.addEventListener('input', handleSearchInput);
     DOM.searchInput.addEventListener('focus', handleSearchInput);
@@ -270,25 +339,25 @@ function bindEvents() {
     }
   });
 
-  // 2. Thay đổi thông tin bài thơ
+  // 3. Thay đổi thông tin bài thơ
   if (DOM.poemTitleInput) {
     DOM.poemTitleInput.addEventListener('input', (e) => {
       appState.title = e.target.value.trim() || 'Tên Bài Thơ';
-      updateA5Card();
+      updateCardDisplay();
     });
   }
 
   if (DOM.poemAuthorInput) {
     DOM.poemAuthorInput.addEventListener('input', (e) => {
       appState.author = e.target.value.trim();
-      updateA5Card();
+      updateCardDisplay();
     });
   }
 
   if (DOM.poemContentInput) {
     DOM.poemContentInput.addEventListener('input', (e) => {
       appState.content = e.target.value;
-      updateA5Card();
+      updateCardDisplay();
     });
   }
 
@@ -296,11 +365,11 @@ function bindEvents() {
     DOM.coverImageInput.addEventListener('input', (e) => {
       appState.coverImage = e.target.value.trim();
       if (DOM.imagePreviewThumb) DOM.imagePreviewThumb.src = appState.coverImage;
-      updateA5Card();
+      updateCardDisplay();
     });
   }
 
-  // 3. Upload ảnh từ máy tính
+  // 4. Upload ảnh từ máy tính
   if (DOM.btnUploadImage && DOM.imageFileInput) {
     DOM.btnUploadImage.addEventListener('click', () => DOM.imageFileInput.click());
     DOM.imageFileInput.addEventListener('change', (e) => {
@@ -311,7 +380,7 @@ function bindEvents() {
           appState.coverImage = event.target.result;
           if (DOM.imagePreviewThumb) DOM.imagePreviewThumb.src = appState.coverImage;
           if (DOM.coverImageInput) DOM.coverImageInput.value = '(Ảnh tùy chỉnh từ máy)';
-          updateA5Card();
+          updateCardDisplay();
           showToast('Đã tải ảnh lên thành công!');
         };
         reader.readAsDataURL(file);
@@ -319,32 +388,55 @@ function bindEvents() {
     });
   }
 
-  // 4. Nhạc YouTube
+  // 5. Nhạc YouTube
   if (DOM.youtubeUrlInput) {
     DOM.youtubeUrlInput.addEventListener('input', (e) => {
       appState.youtubeUrl = e.target.value.trim();
-      updateA5Card();
+      updateCardDisplay();
     });
   }
 
   if (DOM.youtubeTitleInput) {
     DOM.youtubeTitleInput.addEventListener('input', (e) => {
       appState.youtubeTitle = e.target.value.trim();
-      updateA5Card();
+      updateCardDisplay();
     });
   }
 
-  // 5. Nút Hành Động Lớn (Tạo & Cập Nhật Mã QR)
+  // 6. Chọn khổ giấy A4 / A5
+  if (DOM.btnPaperA4) DOM.btnPaperA4.addEventListener('click', () => setPaperFormat('a4'));
+  if (DOM.btnPaperA5) DOM.btnPaperA5.addEventListener('click', () => setPaperFormat('a5'));
+
+  // 7. Chọn kích thước QR (Presets & Slider)
+  if (DOM.qrSizePresetBtns) {
+    DOM.qrSizePresetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sizeLevel = btn.getAttribute('data-size');
+        setQrSizePreset(sizeLevel);
+      });
+    });
+  }
+
+  if (DOM.qrSizeSlider) {
+    DOM.qrSizeSlider.addEventListener('input', handleQrSlider);
+  }
+
+  // 8. Chuyển đổi Toggle 1 QR / 2 QR
+  if (DOM.btnToggle1QR) DOM.btnToggle1QR.addEventListener('click', () => setQRMode('1'));
+  if (DOM.btnToggle2QR) DOM.btnToggle2QR.addEventListener('click', () => setQRMode('2'));
+
+  // 9. Nút Hành Động Lớn (Cập nhật mã QR, Đổi bài mẫu, Reset)
   if (DOM.btnGenerateQR) {
     DOM.btnGenerateQR.addEventListener('click', () => {
-      updateA5Card();
+      updateCardDisplay();
       showToast('✨ Đã tạo & cập nhật mã QR thành công!');
     });
   }
 
   if (DOM.btnRefreshPreview) {
     DOM.btnRefreshPreview.addEventListener('click', () => {
-      updateA5Card();
+      updateCardDisplay();
+      setupResponsiveScale();
       showToast('Đã làm mới mã QR!');
     });
   }
@@ -353,7 +445,7 @@ function bindEvents() {
     DOM.btnQuickSample.addEventListener('click', loadRandomSample);
   }
 
-  // 6. Phụ đề dưới QR
+  // 10. Phụ đề dưới QR & Kích thước chữ
   if (DOM.poemSubtitleInput) {
     DOM.poemSubtitleInput.addEventListener('input', (e) => {
       appState.poemSubtitle = e.target.value;
@@ -371,11 +463,11 @@ function bindEvents() {
   if (DOM.selectSubtitleFontSize) {
     DOM.selectSubtitleFontSize.addEventListener('change', (e) => {
       appState.subtitleFontSize = e.target.value;
-      updateA5Card();
+      updateCardDisplay();
     });
   }
 
-  // 7. Chủ Đề Màu Sắc & Kiểu Dáng QR
+  // 11. Bộ màu chủ đề & Color Pickers
   if (DOM.themePills) {
     DOM.themePills.forEach(pill => {
       pill.addEventListener('click', () => {
@@ -392,7 +484,7 @@ function bindEvents() {
       appState.colorTextPoem = hex;
       appState.colorBgPoem = hexToLightBg(hex);
       appState.colorBorderPoem = hexToLightBorder(hex);
-      updateA5Card();
+      updateCardDisplay();
     });
   }
 
@@ -403,7 +495,7 @@ function bindEvents() {
       appState.colorTextMusic = hex;
       appState.colorBgMusic = hexToLightBg(hex);
       appState.colorBorderMusic = hexToLightBorder(hex);
-      updateA5Card();
+      updateCardDisplay();
     });
   }
 
@@ -416,7 +508,7 @@ function bindEvents() {
       btn.classList.add('active');
       const radius = btn.getAttribute('data-radius') + 'px';
       appState.cardRadius = radius;
-      updateA5Card();
+      updateCardDisplay();
     });
   });
 
@@ -424,15 +516,13 @@ function bindEvents() {
     DOM.btnResetStyles.addEventListener('click', resetDefaultStyles);
   }
 
-  // 8. Chuyển đổi Toggle 1 QR / 2 QR
-  if (DOM.btnToggle1QR) DOM.btnToggle1QR.addEventListener('click', () => setQRMode('1'));
-  if (DOM.btnToggle2QR) DOM.btnToggle2QR.addEventListener('click', () => setQRMode('2'));
-
-  // 9. Nút In & Tải ảnh
-  if (DOM.btnPrint) DOM.btnPrint.addEventListener('click', () => window.print());
+  // 12. In & Tải ảnh PNG
+  if (DOM.btnPrint) DOM.btnPrint.addEventListener('click', printCard);
+  if (DOM.btnMobilePrint) DOM.btnMobilePrint.addEventListener('click', printCard);
   if (DOM.btnDownloadPng) DOM.btnDownloadPng.addEventListener('click', downloadCardAsPng);
+  if (DOM.btnMobileDownloadPng) DOM.btnMobileDownloadPng.addEventListener('click', downloadCardAsPng);
 
-  // 10. Modal xem trước trên điện thoại
+  // 13. Modal xem trước trên điện thoại
   if (DOM.btnPreviewPhone) DOM.btnPreviewPhone.addEventListener('click', openPhonePreview);
   if (DOM.btnCloseModal) DOM.btnCloseModal.addEventListener('click', closePhonePreview);
   if (DOM.phoneModal) {
@@ -440,6 +530,146 @@ function bindEvents() {
       if (e.target === DOM.phoneModal) closePhonePreview();
     });
   }
+}
+
+/**
+ * Chuyển tab trong Sidebar
+ */
+function switchSidebarTab(tabId) {
+  if (DOM.sidebarTabBtns) {
+    DOM.sidebarTabBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+    });
+  }
+  if (DOM.tabPanels) {
+    DOM.tabPanels.forEach(panel => {
+      panel.classList.toggle('active', panel.id === tabId);
+    });
+  }
+}
+
+/**
+ * Chuyển đổi giao diện Mobile (Soạn thảo vs Xem thẻ)
+ */
+function setMobileView(view) {
+  appState.mobileView = view;
+  if (view === 'preview') {
+    document.body.classList.remove('mobile-view-editor');
+    document.body.classList.add('mobile-view-preview');
+    if (DOM.btnMobileTabEdit) DOM.btnMobileTabEdit.classList.remove('active');
+    if (DOM.btnMobileTabPreview) DOM.btnMobileTabPreview.classList.add('active');
+    setTimeout(setupResponsiveScale, 50);
+  } else {
+    document.body.classList.remove('mobile-view-preview');
+    document.body.classList.add('mobile-view-editor');
+    if (DOM.btnMobileTabEdit) DOM.btnMobileTabEdit.classList.add('active');
+    if (DOM.btnMobileTabPreview) DOM.btnMobileTabPreview.classList.remove('active');
+  }
+}
+
+/**
+ * Chuyển đổi khổ giấy A4 / A5
+ */
+function setPaperFormat(format) {
+  appState.paperFormat = format;
+  
+  // Cập nhật class body cho print stylesheet
+  document.body.classList.remove('paper-a4', 'paper-a5');
+  document.body.classList.add(`paper-${format}`);
+
+  // Cập nhật class khung tờ in
+  if (DOM.printSheet) {
+    DOM.printSheet.classList.remove('paper-sheet-a4', 'paper-sheet-a5');
+    DOM.printSheet.classList.add(`paper-sheet-${format}`);
+  }
+
+  // Cập nhật trạng thái nút
+  if (DOM.btnPaperA4) DOM.btnPaperA4.classList.toggle('active', format === 'a4');
+  if (DOM.btnPaperA5) DOM.btnPaperA5.classList.toggle('active', format === 'a5');
+
+  // Cập nhật labels
+  const formatName = format.toUpperCase();
+  const formatDims = format === 'a4' ? '297mm × 210mm' : '210mm × 148mm';
+  
+  if (DOM.mobilePaperLabel) DOM.mobilePaperLabel.innerText = formatName;
+  if (DOM.paperBadgePill) DOM.paperBadgePill.innerText = `${formatName} Nằm Ngang`;
+  if (DOM.previewToolbarTitle) DOM.previewToolbarTitle.innerText = `Bản xem trước Khổ ${formatName} Ngang (${formatDims})`;
+  if (DOM.btnPrintText) DOM.btnPrintText.innerText = `In Thẻ ${formatName}`;
+  if (DOM.btnMobilePrintText) DOM.btnMobilePrintText.innerText = `In Thẻ ${formatName}`;
+
+  updateCardDisplay();
+  setupResponsiveScale();
+  showToast(`Đã chuyển sang Khổ ${formatName} (${formatDims})`);
+}
+
+/**
+ * Thiết lập kích thước QR theo preset (Normal, Large, XLarge)
+ */
+function setQrSizePreset(level) {
+  appState.qrSizeLevel = level;
+  
+  let multiplier = 1.0;
+  let label = 'Lớn';
+  let sliderVal = 100;
+
+  if (level === 'normal') {
+    multiplier = 0.85;
+    label = 'Vừa';
+    sliderVal = 85;
+  } else if (level === 'large') {
+    multiplier = 1.0;
+    label = 'Lớn ⭐';
+    sliderVal = 100;
+  } else if (level === 'xlarge') {
+    multiplier = 1.25;
+    label = 'Cực Đại';
+    sliderVal = 125;
+  }
+
+  appState.qrScaleMultiplier = multiplier;
+
+  if (DOM.qrSizeSlider) DOM.qrSizeSlider.value = sliderVal;
+  if (DOM.qrSizeSliderVal) DOM.qrSizeSliderVal.innerText = `${sliderVal}%`;
+  if (DOM.qrSizeDisplayBadge) DOM.qrSizeDisplayBadge.innerText = label;
+
+  if (DOM.qrSizePresetBtns) {
+    DOM.qrSizePresetBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-size') === level);
+    });
+  }
+
+  document.documentElement.style.setProperty('--qr-scale-multiplier', multiplier);
+  updateCardDisplay();
+}
+
+/**
+ * Xử lý thanh trượt kích thước QR Slider
+ */
+function handleQrSlider(e) {
+  const val = parseInt(e.target.value, 10);
+  const multiplier = val / 100;
+  appState.qrScaleMultiplier = multiplier;
+
+  if (DOM.qrSizeSliderVal) DOM.qrSizeSliderVal.innerText = `${val}%`;
+
+  let label = 'Tùy chỉnh';
+  if (val <= 85) label = 'Vừa';
+  else if (val >= 95 && val <= 105) label = 'Lớn';
+  else if (val >= 120) label = 'Cực Đại';
+
+  if (DOM.qrSizeDisplayBadge) DOM.qrSizeDisplayBadge.innerText = `${label} (${val}%)`;
+
+  if (DOM.qrSizePresetBtns) {
+    DOM.qrSizePresetBtns.forEach(btn => {
+      const btnSize = btn.getAttribute('data-size');
+      if (btnSize === 'normal') btn.classList.toggle('active', val <= 85);
+      else if (btnSize === 'large') btn.classList.toggle('active', val >= 95 && val <= 105);
+      else if (btnSize === 'xlarge') btn.classList.toggle('active', val >= 120);
+    });
+  }
+
+  document.documentElement.style.setProperty('--qr-scale-multiplier', multiplier);
+  updateCardDisplay();
 }
 
 /**
@@ -481,22 +711,24 @@ function applyTheme(themeKey) {
     });
   }
 
-  updateA5Card();
+  updateCardDisplay();
   showToast(`Đã áp dụng chủ đề: ${theme.name}`);
 }
 
 function resetDefaultStyles() {
   applyTheme('default');
+  setPaperFormat('a4');
+  setQrSizePreset('large');
   appState.cardRadius = '28px';
-  appState.subtitleFontSize = '20px';
+  appState.subtitleFontSize = '24px';
   
-  if (DOM.selectSubtitleFontSize) DOM.selectSubtitleFontSize.value = '20px';
+  if (DOM.selectSubtitleFontSize) DOM.selectSubtitleFontSize.value = '24px';
   if (DOM.btnRadiusRound) {
     [DOM.btnRadiusRound, DOM.btnRadiusSemi, DOM.btnRadiusSquare].forEach(b => b && b.classList.remove('active'));
     DOM.btnRadiusRound.classList.add('active');
   }
 
-  updateA5Card();
+  updateCardDisplay();
   showToast('Đã khôi phục kiểu dáng mặc định');
 }
 
@@ -571,7 +803,7 @@ function selectPoem(poem) {
   if (DOM.youtubeUrlInput) DOM.youtubeUrlInput.value = appState.youtubeUrl;
   if (DOM.youtubeTitleInput) DOM.youtubeTitleInput.value = appState.youtubeTitle;
 
-  updateA5Card();
+  updateCardDisplay();
 }
 
 /**
@@ -590,19 +822,14 @@ function setQRMode(mode) {
     if (DOM.layoutSingle) DOM.layoutSingle.style.display = 'none';
     if (DOM.layoutDual) DOM.layoutDual.style.display = 'grid';
   }
-  updateA5Card();
+  updateCardDisplay();
 }
 
 /**
- * Cập nhật toàn bộ khung tờ A5 và vẽ lại các mã QR
+ * Cập nhật toàn bộ khung tờ in và vẽ lại các mã QR
  */
-function updateA5Card() {
-  // 1. Cập nhật Title tờ in (nếu có element)
-  if (DOM.a5TitleDisplay) {
-    DOM.a5TitleDisplay.innerText = `Bài Thơ: ${appState.title}`;
-  }
-
-  // 2. Cập nhật phụ đề & Font Size
+function updateCardDisplay() {
+  // 1. Cập nhật phụ đề & Font Size
   if (DOM.subtitleSingleDisplay) {
     DOM.subtitleSingleDisplay.innerText = appState.singleSubtitle;
     DOM.subtitleSingleDisplay.style.fontSize = appState.subtitleFontSize;
@@ -619,24 +846,24 @@ function updateA5Card() {
     DOM.subtitleMusicDisplay.style.color = appState.colorTextMusic;
   }
 
-  // 3. Áp dụng Màu Sắc & Kiểu Dáng Thẻ A5
+  // 2. Áp dụng Màu Sắc & Kiểu Dáng Thẻ (Nền trắng tinh khiết, không nền mờ)
   if (DOM.cardSingle) {
     DOM.cardSingle.style.borderRadius = appState.cardRadius;
-    DOM.cardSingle.style.backgroundColor = appState.colorBgPoem;
+    DOM.cardSingle.style.backgroundColor = '#ffffff';
     DOM.cardSingle.style.borderColor = appState.colorBorderPoem;
   }
   if (DOM.cardPoem) {
     DOM.cardPoem.style.borderRadius = appState.cardRadius;
-    DOM.cardPoem.style.backgroundColor = appState.colorBgPoem;
+    DOM.cardPoem.style.backgroundColor = '#ffffff';
     DOM.cardPoem.style.borderColor = appState.colorBorderPoem;
   }
   if (DOM.cardMusic) {
     DOM.cardMusic.style.borderRadius = appState.cardRadius;
-    DOM.cardMusic.style.backgroundColor = appState.colorBgMusic;
+    DOM.cardMusic.style.backgroundColor = '#ffffff';
     DOM.cardMusic.style.borderColor = appState.colorBorderMusic;
   }
 
-  // 4. Tạo URL đọc thơ cho mã QR
+  // 3. Tạo URL đọc thơ cho mã QR
   const poemPayload = {
     id: appState.id,
     title: appState.title,
@@ -647,22 +874,31 @@ function updateA5Card() {
     youtubeTitle: appState.youtubeTitle
   };
   const readerUrl = QREngine.generateReaderUrl(poemPayload);
+  const isA4 = appState.paperFormat === 'a4';
+  const multiplier = appState.qrScaleMultiplier || 1.0;
 
-  // 5. Sinh QR Code theo chế độ
+  // 4. Sinh QR Code với kích cỡ phù hợp theo khổ giấy và thanh trượt
   if (appState.qrMode === '1') {
-    // Chế độ 1 QR lớn ở giữa (~200px)
+    // 1 QR Mode: A4: 310px, A5: 210px
+    const baseSize = isA4 ? 310 : 210;
+    const qrPx = Math.round(baseSize * multiplier);
+
     if (DOM.qrSingleContainer) {
       QREngine.renderQR(DOM.qrSingleContainer, readerUrl, {
-        size: 200,
+        size: qrPx,
         colorDark: appState.colorQrPoem,
         colorLight: '#ffffff'
       });
     }
   } else {
-    // Chế độ 2 QR Song Song
+    // 2 QR Mode: A4: 230px, A5: 156px
+    const baseSize = isA4 ? 230 : 156;
+    const qrPx = Math.round(baseSize * multiplier);
+
+    // QR Trái (Bài thơ)
     if (DOM.qrPoemContainer) {
       QREngine.renderQR(DOM.qrPoemContainer, readerUrl, {
-        size: 154,
+        size: qrPx,
         colorDark: appState.colorQrPoem,
         colorLight: '#ffffff'
       });
@@ -672,7 +908,7 @@ function updateA5Card() {
     const musicUrl = appState.youtubeUrl || 'https://www.youtube.com';
     if (DOM.qrMusicContainer) {
       QREngine.renderQR(DOM.qrMusicContainer, musicUrl, {
-        size: 154,
+        size: qrPx,
         colorDark: appState.colorQrMusic,
         colorLight: '#ffffff'
       });
@@ -681,22 +917,44 @@ function updateA5Card() {
 }
 
 /**
- * Tự động scale khung A5 vừa vặn với màn hình
+ * Tự động scale khung A4/A5 vừa vặn hoàn hảo với màn hình máy tính & điện thoại
  */
 function setupResponsiveScale() {
-  const container = document.querySelector('.preview-area');
-  if (!container || !DOM.a5Scaler) return;
+  const container = DOM.previewArea;
+  if (!container || !DOM.sheetScaler || !DOM.printSheet) return;
 
-  const availableWidth = container.clientWidth - 48;
-  const availableHeight = container.clientHeight - 120;
-  const sheetWidth = 794;
-  const sheetHeight = 559;
+  // Kích thước chuẩn của tờ in dựa trên khổ giấy
+  const isA4 = appState.paperFormat === 'a4';
+  const sheetWidth = isA4 ? 1080 : 794;
+  const sheetHeight = isA4 ? 764 : 559;
 
-  let scale = Math.min(availableWidth / sheetWidth, availableHeight / sheetHeight, 1);
-  if (scale < 0.4) scale = 0.4;
+  // Kích thước vùng khả dụng
+  const containerWidth = container.clientWidth || window.innerWidth;
+  const containerHeight = container.clientHeight || (window.innerHeight - 65);
+
+  // Khoảng đệm an toàn
+  const horizontalPadding = window.innerWidth <= 768 ? 20 : 48;
+  const verticalPadding = window.innerWidth <= 768 ? 100 : 90;
+
+  const availableWidth = Math.max(containerWidth - horizontalPadding, 200);
+  const availableHeight = Math.max(containerHeight - verticalPadding, 200);
+
+  // Tính tỷ lệ scale hoàn hảo không bị méo và không bị tràn viền
+  let scale = Math.min(availableWidth / sheetWidth, availableHeight / sheetHeight);
+
+  // Giới hạn scale
+  if (scale > 1.05) scale = 1.0;
+  if (scale < 0.25) scale = 0.25;
 
   appState.scale = scale;
-  DOM.a5Scaler.style.transform = `scale(${scale})`;
+  DOM.sheetScaler.style.transform = `scale(${scale})`;
+}
+
+/**
+ * In thẻ trực tiếp qua hộp thoại trình duyệt
+ */
+function printCard() {
+  window.print();
 }
 
 /**
@@ -724,7 +982,7 @@ function closePhonePreview() {
 }
 
 /**
- * Tải thẻ A5 dưới dạng ảnh PNG chất lượng cao
+ * Tải thẻ dưới dạng ảnh PNG chất lượng cao (Chuẩn A4 hoặc A5)
  */
 function downloadCardAsPng() {
   if (!window.html2canvas) {
@@ -732,27 +990,28 @@ function downloadCardAsPng() {
     return;
   }
 
-  showToast('Đang tạo ảnh A5 chất lượng cao...');
+  const paperName = appState.paperFormat.toUpperCase();
+  showToast(`Đang tạo ảnh ${paperName} chất lượng cao...`);
 
-  const oldTransform = DOM.a5Scaler ? DOM.a5Scaler.style.transform : '';
-  if (DOM.a5Scaler) DOM.a5Scaler.style.transform = 'none';
+  const oldTransform = DOM.sheetScaler ? DOM.sheetScaler.style.transform : '';
+  if (DOM.sheetScaler) DOM.sheetScaler.style.transform = 'none';
 
-  html2canvas(DOM.a5Sheet, {
+  html2canvas(DOM.printSheet, {
     scale: 2.5,
     useCORS: true,
     backgroundColor: '#ffffff',
     logging: false
   }).then(canvas => {
-    if (DOM.a5Scaler) DOM.a5Scaler.style.transform = oldTransform;
+    if (DOM.sheetScaler) DOM.sheetScaler.style.transform = oldTransform;
     
     const link = document.createElement('a');
-    const cleanTitle = (appState.title || 'The_A5').replace(/[^a-zA-Z0-9\u00C0-\u1EF9]/g, '_');
-    link.download = `The_A5_Bai_Tho_${cleanTitle}.png`;
+    const cleanTitle = (appState.title || 'The_Hoc_Lieu').replace(/[^a-zA-Z0-9\u00C0-\u1EF9]/g, '_');
+    link.download = `The_${paperName}_Bai_Tho_${cleanTitle}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-    showToast('Đã tải ảnh thẻ A5 thành công!');
+    showToast(`Đã tải ảnh thẻ ${paperName} thành công!`);
   }).catch(err => {
-    if (DOM.a5Scaler) DOM.a5Scaler.style.transform = oldTransform;
+    if (DOM.sheetScaler) DOM.sheetScaler.style.transform = oldTransform;
     console.error("Export PNG error:", err);
     showToast('Lỗi khi xuất ảnh!');
   });
@@ -765,7 +1024,7 @@ function showToast(message) {
   if (!DOM.toastContainer) return;
   const toast = document.createElement('div');
   toast.className = 'toast';
-  toast.innerHTML = `<i data-lucide="check-circle" style="width:18px; height:18px; color:#10b981;"></i> <span>${escapeHtml(message)}</span>`;
+  toast.innerHTML = `<i data-lucide="check-circle" style="width:16px; height:16px; color:#10b981;"></i> <span>${escapeHtml(message)}</span>`;
   DOM.toastContainer.appendChild(toast);
   if (window.lucide) lucide.createIcons();
 
@@ -774,450 +1033,38 @@ function showToast(message) {
     toast.style.transform = 'translateY(12px)';
     toast.style.transition = 'all 0.3s ease';
     setTimeout(() => toast.remove(), 300);
-  }, 2800);
+  }, 2600);
 }
 
 /**
- * Gọi trực tiếp Google Gemini REST API từ Trình duyệt (Hỗ trợ model động)
+ * Escape HTML
  */
-async function callGeminiDirect(apiKey, query) {
-  const candidateModels = [
-    appState.activeModel || 'gemini-1.5-flash',
-    'gemini-2.5-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-8b',
-    'gemini-pro'
-  ];
-
-  // Lọc model duy nhất
-  const uniqueModels = [...new Set(candidateModels)];
-
-  const prompt = `Bạn là từ điển văn học mầm non và giáo dục thiếu nhi Việt Nam.
-Nhiệm vụ: Tra cứu chính xác và đầy đủ bài thơ mầm non theo yêu cầu: "${query}".
-Lưu ý quan trọng:
-1. Yêu cầu tìm kiếm có thể là tên bài, một câu thơ, hoặc từ khóa không dấu. Hãy nhận diện đúng bài thơ mầm non tương ứng.
-2. Trả về đúng và đủ toàn văn các khổ thơ, phân dòng chuẩn xác từng câu thơ.
-3. Ghi rõ tên tác giả (nếu không rõ ghi 'Sưu tầm').
-4. Gợi ý 1 bài hát thiếu nhi liên quan.
-
-Định dạng phản hồi BẮT BUỘC là JSON duy nhất (sử dụng \\n để xuống dòng trong lời thơ) theo mẫu:
-{
-  "title": "Tên Bài Thơ",
-  "author": "Tên Tác Giả",
-  "content": "Câu thơ 1\\nCâu thơ 2\\nCâu thơ 3\\n\\nCâu thơ 4\\nCâu thơ 5",
-  "category": "Chủ đề mầm non",
-  "coverImage": "https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=800&q=80",
-  "youtubeUrl": "https://www.youtube.com/results?search_query=nhac+thieu+nhi",
-  "youtubeTitle": "Nhạc: [Tên bài hát]"
-}`;
-
-  let lastError = null;
-
-  for (const model of uniqueModels) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    try {
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.2,
-            topP: 0.8,
-            topK: 40
-          }
-        })
-      });
-
-      if (resp.ok) {
-        const data = await resp.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) {
-          const parsed = parseAiPoemJson(text, query);
-          if (parsed) {
-            appState.activeModel = model;
-            return parsed;
-          }
-        }
-      } else {
-        const errJson = await resp.json().catch(() => ({}));
-        const errDetail = errJson?.error?.message || resp.statusText;
-        lastError = new Error(`Lỗi Google (${model}): ${errDetail}`);
-      }
-    } catch (e) {
-      lastError = e;
-    }
-  }
-
-  throw lastError || new Error("Không thể kết nối đến Google Gemini API");
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.innerText = text;
+  return div.innerHTML;
 }
 
-/**
- * Bộ phân tích & trích xuất thơ đa tầng siêu bền bỉ (JSON, Escaped JSON, Regex, Text)
- */
-function parseAiPoemJson(rawText, query) {
-  if (!rawText) return null;
-  let text = rawText.trim();
+// ==========================================================================
+// GEMINI AI & API KEY MANAGEMENT
+// ==========================================================================
+const API_CONFIG = {
+  storageKey: 'gemini_api_key_custom',
+  activeKey: localStorage.getItem('gemini_api_key_custom') || ''
+};
 
-  // 1. Loại bỏ markdown code fence nếu có
-  const mdMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (mdMatch) text = mdMatch[1].trim();
-
-  // 2. Thử bóc tách JSON chuẩn hoặc JSON có ký tự xuống dòng thô
-  const jsonBraceMatch = text.match(/\{[\s\S]*\}/);
-  if (jsonBraceMatch) {
-    const candidateJson = jsonBraceMatch[0];
-
-    // Cách A: JSON.parse trực tiếp
-    try {
-      const data = JSON.parse(candidateJson);
-      if (data && (data.title || data.content)) {
-        return formatPoemResult(data, query);
-      }
-    } catch (e) {
-      // Cách B: Sửa lỗi unescaped newlines trong chuỗi JSON
-      try {
-        const sanitized = candidateJson.replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, (match, p1) => {
-          return '"' + p1.replace(/\r?\n/g, '\\n') + '"';
-        });
-        const data = JSON.parse(sanitized);
-        if (data && (data.title || data.content)) {
-          return formatPoemResult(data, query);
-        }
-      } catch (e2) {}
-    }
-  }
-
-  // 3. Trích xuất thủ công bằng Regex từng trường dữ liệu
-  let extractedTitle = extractField(text, /"(?:title|ten_bai_tho|tên_bài_thơ)"\s*:\s*"([^"]+)"/i) ||
-                       extractField(text, /(?:Tên bài thơ|Bài thơ|Tựa đề)\s*:\s*([^\n\r]+)/i);
-
-  let extractedAuthor = extractField(text, /"(?:author|tac_gia|tác_giả)"\s*:\s*"([^"]+)"/i) ||
-                        extractField(text, /(?:Tác giả|Sáng tác)\s*:\s*([^\n\r]+)/i) || 'Sưu tầm';
-
-  let extractedCategory = extractField(text, /"(?:category|chu_de|chủ_đề)"\s*:\s*"([^"]+)"/i) ||
-                          extractField(text, /(?:Chủ đề|Thể loại)\s*:\s*([^\n\r]+)/i) || 'Mầm non';
-
-  let extractedYt = extractField(text, /"(?:youtubeUrl|youtube_url|link_youtube)"\s*:\s*"([^"]+)"/i) || '';
-  let extractedYtTitle = extractField(text, /"(?:youtubeTitle|youtube_title|bai_hat)"\s*:\s*"([^"]+)"/i) || '';
-
-  // Trích xuất Lời thơ
-  let extractedContent = '';
-  const contentJsonMatch = text.match(/"(?:content|noi_dung|lời_thơ|loi_tho)"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"\w+"|\s*})/i);
-  if (contentJsonMatch) {
-    extractedContent = contentJsonMatch[1].replace(/\\n/g, '\n');
-  } else {
-    // Nếu Gemini trả về văn bản tự nhiên
-    const contentTextMatch = text.match(/(?:Lời thơ|Nội dung bài thơ|Toàn văn|Bài thơ)[\s:]*\n([\s\S]+)/i);
-    if (contentTextMatch) {
-      extractedContent = contentTextMatch[1].trim();
-    } else if (text.split('\n').length >= 3) {
-      extractedContent = text;
-    }
-  }
-
-  if (extractedTitle || extractedContent) {
-    return {
-      title: (extractedTitle || query || 'Bài Thơ Thiếu Nhi').replace(/^"|"$/g, '').trim(),
-      author: (extractedAuthor || 'Sưu tầm').replace(/^"|"$/g, '').trim(),
-      category: (extractedCategory || 'Mầm non').replace(/^"|"$/g, '').trim(),
-      content: cleanPoemVerses(extractedContent || text),
-      coverImage: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=800&q=80',
-      youtubeUrl: extractedYt || `https://www.youtube.com/results?search_query=${encodeURIComponent(extractedTitle || query)}`,
-      youtubeTitle: extractedYtTitle || `Nhạc: ${extractedTitle || query}`,
-      isAiGenerated: true
-    };
-  }
-
-  return null;
-}
-
-function extractField(text, regex) {
-  const m = text.match(regex);
-  return m ? m[1].trim() : null;
-}
-
-function formatPoemResult(data, query) {
-  return {
-    title: (data.title || query || 'Bài Thơ Thiếu Nhi').trim(),
-    author: (data.author || 'Sưu tầm').trim(),
-    category: (data.category || 'Mầm non').trim(),
-    content: cleanPoemVerses(data.content || ''),
-    coverImage: data.coverImage || 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=800&q=80',
-    youtubeUrl: data.youtubeUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(data.title || query)}`,
-    youtubeTitle: data.youtubeTitle || `Nhạc: ${data.title || query}`,
-    isAiGenerated: true
-  };
-}
-
-function cleanPoemVerses(content) {
-  if (!content) return '';
-  return content
-    .replace(/\\n/g, '\n')
-    .replace(/```/g, '')
-    .trim();
-}
-
-/**
- * Kích hoạt tra cứu thông minh qua Gemini AI
- */
-async function triggerAiSearch() {
-  const query = DOM.searchInput ? DOM.searchInput.value.trim() : '';
-  if (!query) {
-    showToast('Vui lòng nhập tên bài thơ hoặc câu thơ cần tìm');
-    return;
-  }
-
-  const savedApiKey = (localStorage.getItem('GEMINI_API_KEY') || '').trim();
-
-  // Bật loading UI
-  setAiSearchLoading(true);
-  showToast('Đang tra cứu bài thơ trực tuyến bằng Gemini AI...');
-
-  let poemData = null;
-
-  // 1. Thử gọi backend FastAPI nếu có
-  try {
-    const apiEndpoint = window.location.origin.includes('8000') 
-      ? '/api/search-poem' 
-      : 'http://127.0.0.1:8000/api/search-poem';
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-    const response = await fetch(apiEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: query, apiKey: savedApiKey }),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      poemData = await response.json();
-    }
-  } catch (err) {
-    console.log("Backend offline, chuyển sang gọi trực tiếp từ Trình duyệt...", err);
-  }
-
-  // 2. Gọi trực tiếp Gemini REST API từ Trình duyệt (nếu có key)
-  if (!poemData && savedApiKey) {
-    try {
-      poemData = await callGeminiDirect(savedApiKey, query);
-    } catch (errDirect) {
-      console.warn("Direct Gemini call failed:", errDirect);
-    }
-  }
-
-  // 3. Nếu chưa có API Key
-  if (!poemData && !savedApiKey) {
-    const localMatches = searchPoems(query);
-    if (localMatches && localMatches.length > 0) {
-      selectPoem(localMatches[0]);
-      showToast(`Tìm thấy bài thơ "${localMatches[0].title}" trong kho mẫu.`);
-    } else {
-      showToast('Chưa cấu hình API Key. Vui lòng bấm "Thêm / Đổi API Key" để kích hoạt AI!');
-      openApiKeyModal();
-    }
-    setAiSearchLoading(false);
-    return;
-  }
-
-  // 4. Đổ dữ liệu nếu tìm thấy bài thơ
-  if (poemData) {
-    selectPoem({
-      id: poemData.id || ('ai-' + Date.now()),
-      title: poemData.title,
-      author: poemData.author || 'Sưu tầm',
-      category: poemData.category || 'Mầm non',
-      content: poemData.content,
-      coverImage: poemData.coverImage || 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=800&q=80',
-      youtubeUrl: poemData.youtubeUrl || '',
-      youtubeTitle: poemData.youtubeTitle || `Nhạc: ${poemData.title}`
-    });
-
-    showToast(`Đã tìm thấy bài thơ "${poemData.title}" từ AI!`);
-  } else {
-    // Fallback kho dữ liệu mẫu
-    const localMatches = searchPoems(query);
-    if (localMatches && localMatches.length > 0) {
-      selectPoem(localMatches[0]);
-      showToast(`Tìm thấy bài thơ "${localMatches[0].title}" trong kho mẫu.`);
-    } else {
-      showToast('Không tìm thấy bài thơ. Vui lòng kiểm tra lại từ khóa hoặc API Key!');
-    }
-  }
-
-  setAiSearchLoading(false);
-}
-
-function setAiSearchLoading(isLoading) {
-  if (!DOM.btnAiSearch) return;
-  DOM.btnAiSearch.disabled = isLoading;
-  if (isLoading) {
-    if (DOM.aiSearchIcon) DOM.aiSearchIcon.style.display = 'none';
-    if (DOM.aiSearchText) DOM.aiSearchText.innerHTML = '<div class="spinner"></div>';
-  } else {
-    if (DOM.aiSearchIcon) DOM.aiSearchIcon.style.display = 'inline-block';
-    if (DOM.aiSearchText) DOM.aiSearchText.innerText = 'Tìm AI';
-  }
-}
-
-/**
- * Kiểm tra kết nối API Key thông minh (Lấy danh sách model từ Google)
- */
-async function testApiKeyConnection() {
-  const key = (DOM.inputApiKey ? DOM.inputApiKey.value.trim() : '') || (localStorage.getItem('GEMINI_API_KEY') || '').trim();
-  if (!key) {
-    showApiKeyTestStatus('error', 'Vui lòng nhập API Key trước khi kiểm tra!');
-    return;
-  }
-
-  showApiKeyTestStatus('loading', 'Đang kiểm tra kết nối với Google Gemini...');
-
-  // Cách 1: Gọi endpoint models để lấy danh sách model được hỗ trợ chuẩn xác 100%
-  try {
-    const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
-    const resp = await fetch(modelsUrl);
-
-    if (resp.ok) {
-      const data = await resp.json();
-      const modelsList = data.models || [];
-      const supported = modelsList
-        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
-        .map(m => m.name.replace('models/', ''));
-
-      const preferred = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-pro'];
-      const chosenModel = preferred.find(m => supported.includes(m)) || supported[0] || 'gemini-1.5-flash';
-
-      appState.activeModel = chosenModel;
-      showApiKeyTestStatus('success', `API Key hợp lệ và hoạt động tốt! (Đã kết nối model: ${chosenModel})`);
-
-      if (DOM.apiStatusDot) DOM.apiStatusDot.classList.add('active');
-      if (DOM.apiHelperText) DOM.apiHelperText.innerText = 'Trạng thái: AI Sẵn Sàng (Gemini)';
-      return;
-    } else {
-      const errJson = await resp.json().catch(() => ({}));
-      const errDetail = errJson?.error?.message || `Mã lỗi ${resp.status}`;
-      showApiKeyTestStatus('error', `Google API từ chối Key: ${errDetail}`);
-      return;
-    }
-  } catch (e) {
-    // Thử fallback trực tiếp qua generateContent
-  }
-
-  // Cách 2: Thử trực tiếp generateContent với các model flash ổn định
-  const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-pro'];
-  let successModel = null;
-  let lastErrorMsg = '';
-
-  for (const model of candidateModels) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: 'Xin chào! Hãy phản hồi OK.' }] }]
-        })
-      });
-
-      if (resp.ok) {
-        successModel = model;
-        break;
-      } else {
-        const errJson = await resp.json().catch(() => ({}));
-        lastErrorMsg = errJson?.error?.message || `Mã phản hồi ${resp.status}`;
-      }
-    } catch (e) {
-      lastErrorMsg = e.message || 'Lỗi mạng hoặc không thể kết nối tới Google';
-    }
-  }
-
-  if (successModel) {
-    appState.activeModel = successModel;
-    showApiKeyTestStatus('success', `API Key hợp lệ! Đã kết nối thành công với Google Gemini (${successModel}).`);
-    if (DOM.apiStatusDot) DOM.apiStatusDot.classList.add('active');
-    if (DOM.apiHelperText) DOM.apiHelperText.innerText = 'Trạng thái: AI Sẵn Sàng (Gemini)';
-  } else {
-    showApiKeyTestStatus('error', `Không thể kết nối API Key: ${lastErrorMsg}`);
-  }
-}
-
-function showApiKeyTestStatus(type, message) {
-  if (!DOM.apiKeyTestStatus) return;
-  DOM.apiKeyTestStatus.style.display = 'block';
-
-  if (type === 'loading') {
-    DOM.apiKeyTestStatus.style.background = '#eff6ff';
-    DOM.apiKeyTestStatus.style.color = '#1d4ed8';
-    DOM.apiKeyTestStatus.style.border = '1px solid #bfdbfe';
-    DOM.apiKeyTestStatus.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;">⏳ ${escapeHtml(message)}</span>`;
-  } else if (type === 'success') {
-    DOM.apiKeyTestStatus.style.background = '#f0fdf4';
-    DOM.apiKeyTestStatus.style.color = '#15803d';
-    DOM.apiKeyTestStatus.style.border = '1px solid #bbf7d0';
-    DOM.apiKeyTestStatus.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;">✅ ${escapeHtml(message)}</span>`;
-  } else {
-    DOM.apiKeyTestStatus.style.background = '#fef2f2';
-    DOM.apiKeyTestStatus.style.color = '#b91c1c';
-    DOM.apiKeyTestStatus.style.border = '1px solid #fecaca';
-    DOM.apiKeyTestStatus.innerHTML = `<span style="display:inline-flex; align-items:center; gap:6px;">❌ ${escapeHtml(message)}</span>`;
-  }
-}
-
-/**
- * Kiểm tra trạng thái kết nối backend và Gemini API
- */
-async function checkApiHealth() {
-  const localSavedKey = (localStorage.getItem('GEMINI_API_KEY') || '').trim();
-  try {
-    const apiEndpoint = window.location.origin.includes('8000') 
-      ? '/api/health' 
-      : 'http://127.0.0.1:8000/api/health';
-
-    const resp = await fetch(apiEndpoint);
-    if (resp.ok) {
-      const data = await resp.json();
-      const isConfigured = data.geminiConfigured || Boolean(localSavedKey);
-      if (DOM.apiStatusDot) {
-        DOM.apiStatusDot.classList.toggle('active', isConfigured);
-      }
-      if (DOM.apiHelperText) {
-        DOM.apiHelperText.innerText = isConfigured 
-          ? 'Trạng thái: AI Sẵn Sàng (Gemini)' 
-          : 'Trạng thái: Chưa nhập API Key (Dùng Database mẫu)';
-      }
-      return;
-    }
-  } catch (e) {
-    // Backend offline
-  }
-
-  // Nếu Backend offline nhưng người dùng đã nhập API Key trong trình duyệt
-  if (localSavedKey) {
-    if (DOM.apiStatusDot) DOM.apiStatusDot.classList.add('active');
-    if (DOM.apiHelperText) DOM.apiHelperText.innerText = 'Trạng thái: AI Sẵn Sàng (Trực tiếp từ Trình duyệt)';
-  } else {
-    if (DOM.apiStatusDot) DOM.apiStatusDot.classList.remove('active');
-    if (DOM.apiHelperText) DOM.apiHelperText.innerText = 'Trạng thái: Chưa nhập API Key (Dùng Database mẫu)';
+function checkApiHealth() {
+  const hasKey = !!API_CONFIG.activeKey;
+  if (DOM.apiStatusDot) DOM.apiStatusDot.classList.toggle('active', hasKey);
+  if (DOM.apiHelperText) {
+    DOM.apiHelperText.innerText = hasKey ? 'Trạng thái: AI Sẵn Sàng (Custom Key)' : 'Trạng thái: AI Sẵn Sàng (Hệ Thống)';
   }
 }
 
 function openApiKeyModal() {
-  const savedKey = localStorage.getItem('GEMINI_API_KEY') || '';
-  if (DOM.inputApiKey) {
-    DOM.inputApiKey.value = savedKey;
-    DOM.inputApiKey.type = 'password';
-  }
-  if (DOM.iconApiKeyVisibility) {
-    DOM.iconApiKeyVisibility.setAttribute('data-lucide', 'eye');
-    if (window.lucide) lucide.createIcons();
-  }
-  if (DOM.apiKeyTestStatus) {
-    DOM.apiKeyTestStatus.style.display = 'none';
-  }
+  if (DOM.inputApiKey) DOM.inputApiKey.value = API_CONFIG.activeKey;
+  if (DOM.apiKeyTestStatus) DOM.apiKeyTestStatus.style.display = 'none';
   if (DOM.apiKeyModal) DOM.apiKeyModal.classList.add('active');
 }
 
@@ -1227,80 +1074,185 @@ function closeApiKeyModal() {
 
 function toggleApiKeyVisibility() {
   if (!DOM.inputApiKey) return;
-  if (DOM.inputApiKey.type === 'password') {
-    DOM.inputApiKey.type = 'text';
-    DOM.iconApiKeyVisibility.setAttribute('data-lucide', 'eye-off');
-  } else {
-    DOM.inputApiKey.type = 'password';
-    DOM.iconApiKeyVisibility.setAttribute('data-lucide', 'eye');
+  const isPassword = DOM.inputApiKey.type === 'password';
+  DOM.inputApiKey.type = isPassword ? 'text' : 'password';
+  if (DOM.iconApiKeyVisibility) {
+    DOM.iconApiKeyVisibility.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
+    if (window.lucide) lucide.createIcons();
   }
-  if (window.lucide) lucide.createIcons();
 }
 
-async function clearApiKey() {
-  localStorage.removeItem('GEMINI_API_KEY');
-  if (DOM.inputApiKey) DOM.inputApiKey.value = '';
-  if (DOM.apiKeyTestStatus) DOM.apiKeyTestStatus.style.display = 'none';
-  
-  try {
-    const apiEndpoint = window.location.origin.includes('8000') 
-      ? '/api/config/api-key' 
-      : 'http://127.0.0.1:8000/api/config/api-key';
-
-    await fetch(apiEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey: '' })
-    });
-  } catch (e) {
-    console.log("Cleared key locally");
-  }
-
-  closeApiKeyModal();
-  checkApiHealth();
-  showToast('Đã xóa Gemini API Key!');
-}
-
-async function saveApiKey() {
-  const key = DOM.inputApiKey ? DOM.inputApiKey.value.trim() : '';
+function saveApiKey() {
+  const key = (DOM.inputApiKey ? DOM.inputApiKey.value.trim() : '');
   if (!key) {
     clearApiKey();
     return;
   }
+  API_CONFIG.activeKey = key;
+  localStorage.setItem(API_CONFIG.storageKey, key);
+  checkApiHealth();
+  closeApiKeyModal();
+  showToast('Đã lưu Gemini API Key thành công!');
+}
 
-  localStorage.setItem('GEMINI_API_KEY', key);
+function clearApiKey() {
+  API_CONFIG.activeKey = '';
+  localStorage.removeItem(API_CONFIG.storageKey);
+  if (DOM.inputApiKey) DOM.inputApiKey.value = '';
+  checkApiHealth();
+  closeApiKeyModal();
+  showToast('Đã xóa API Key tùy chỉnh');
+}
 
-  try {
-    const apiEndpoint = window.location.origin.includes('8000') 
-      ? '/api/config/api-key' 
-      : 'http://127.0.0.1:8000/api/config/api-key';
-
-    await fetch(apiEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey: key })
-    });
-  } catch (e) {
-    console.log("Saved key locally");
+async function testApiKeyConnection() {
+  const key = (DOM.inputApiKey ? DOM.inputApiKey.value.trim() : '') || API_CONFIG.activeKey;
+  if (!key) {
+    showTestStatus("Vui lòng nhập API Key để kiểm tra", "error");
+    return;
   }
 
-  closeApiKeyModal();
-  checkApiHealth();
-  showToast('Đã lưu cấu hình Gemini API Key thành công!');
+  showTestStatus("Đang kiểm tra kết nối với Google Gemini...", "loading");
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+    const data = await response.json();
+    if (response.ok && data.models) {
+      showTestStatus("Kết nối thành công! API Key hoạt động chính xác.", "success");
+    } else {
+      const errMsg = data.error ? data.error.message : 'API Key không hợp lệ';
+      showTestStatus(`Lỗi: ${errMsg}`, "error");
+    }
+  } catch (err) {
+    showTestStatus("Không thể kết nối đến máy chủ Google: " + err.message, "error");
+  }
 }
 
-function escapeHtml(text) {
-  if (!text) return '';
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function showTestStatus(msg, type) {
+  if (!DOM.apiKeyTestStatus) return;
+  DOM.apiKeyTestStatus.style.display = 'block';
+  DOM.apiKeyTestStatus.innerText = msg;
+  if (type === 'success') {
+    DOM.apiKeyTestStatus.style.background = '#ecfdf5';
+    DOM.apiKeyTestStatus.style.color = '#065f46';
+    DOM.apiKeyTestStatus.style.border = '1px solid #a7f3d0';
+  } else if (type === 'error') {
+    DOM.apiKeyTestStatus.style.background = '#fef2f2';
+    DOM.apiKeyTestStatus.style.color = '#991b1b';
+    DOM.apiKeyTestStatus.style.border = '1px solid #fecaca';
+  } else {
+    DOM.apiKeyTestStatus.style.background = '#f8fafc';
+    DOM.apiKeyTestStatus.style.color = '#334155';
+    DOM.apiKeyTestStatus.style.border = '1px solid #cbd5e1';
+  }
 }
 
-// Khởi động
-window.addEventListener('DOMContentLoaded', () => {
-  if (window.lucide) lucide.createIcons();
-  initApp();
-});
+async function triggerAiSearch() {
+  const query = DOM.searchInput ? DOM.searchInput.value.trim() : '';
+  if (!query) {
+    showToast('Vui lòng nhập tên hoặc câu thơ cần tìm!');
+    return;
+  }
+
+  setAiSearchLoading(true);
+  showToast(`Đang tra cứu bài thơ "${query}" với Gemini AI...`);
+
+  try {
+    // 1. Thử gọi backend FastAPI trước
+    let resultPoem = null;
+    try {
+      const resp = await fetch('/api/search-poem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query, apiKey: API_CONFIG.activeKey })
+      });
+      if (resp.ok) {
+        resultPoem = await resp.json();
+      }
+    } catch (e) {
+      console.warn("Backend API not reachable, falling back to direct client search:", e);
+    }
+
+    // 2. Nếu không có backend, gọi trực tiếp Gemini API client-side nếu có key
+    if (!resultPoem && API_CONFIG.activeKey) {
+      resultPoem = await directGeminiSearch(query, API_CONFIG.activeKey);
+    }
+
+    // 3. Fallback tìm kiếm trong kho bài thơ có sẵn
+    if (!resultPoem) {
+      const localMatches = searchPoems(query);
+      if (localMatches && localMatches.length > 0) {
+        resultPoem = localMatches[0];
+      }
+    }
+
+    if (resultPoem && resultPoem.title) {
+      selectPoem(resultPoem);
+      showToast(`Đã tìm thấy bài thơ "${resultPoem.title}"!`);
+    } else {
+      showToast('Không tìm thấy bài thơ phù hợp. Hãy thử câu thơ khác!');
+    }
+  } catch (err) {
+    console.error("AI Search Error:", err);
+    showToast('Lỗi khi tra cứu AI: ' + err.message);
+  } finally {
+    setAiSearchLoading(false);
+  }
+}
+
+function setAiSearchLoading(isLoading) {
+  if (!DOM.btnAiSearch) return;
+  DOM.btnAiSearch.disabled = isLoading;
+  if (DOM.aiSearchIcon) {
+    if (isLoading) {
+      DOM.aiSearchIcon.className = 'spinner';
+    } else {
+      DOM.aiSearchIcon.className = '';
+      DOM.aiSearchIcon.setAttribute('data-lucide', 'sparkles');
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+  if (DOM.aiSearchText) {
+    DOM.aiSearchText.innerText = isLoading ? 'Đang tìm...' : 'Tìm AI';
+  }
+}
+
+/**
+ * Gọi trực tiếp Gemini API client-side
+ */
+async function directGeminiSearch(query, apiKey) {
+  const prompt = `Bạn là chuyên gia về thơ ca mầm non Việt Nam. Hãy tìm kiếm chính xác bài thơ mầm non theo yêu cầu: "${query}".
+Trả về kết quả duy nhất ở định dạng JSON hợp lệ (không kèm markdown \`\`\`json):
+{
+  "title": "Tên bài thơ",
+  "author": "Tên tác giả hoặc Sưu tầm",
+  "category": "Chủ đề (VD: Gia đình, Động vật, Thực vật...)",
+  "content": "Toàn văn bài thơ có ngắt dòng giữa các câu thơ và khổ thơ",
+  "coverImage": "URL tranh minh họa thích hợp hoặc để trống",
+  "youtubeUrl": "URL bài hát thiếu nhi youtube liên quan hoặc để trống",
+  "youtubeTitle": "Tiêu đề bài hát hiển thị"
+}`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: "application/json" }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Gemini API error: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (text) {
+    return JSON.parse(text);
+  }
+  return null;
+}
+
+// Khởi chạy ứng dụng khi DOM sẵn sàng
+document.addEventListener('DOMContentLoaded', initApp);

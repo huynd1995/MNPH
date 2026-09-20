@@ -1,17 +1,16 @@
 /* ==========================================================================
-   A5 LANDSCAPE PRINT STYLESHEET (@media print)
-   Khổ giấy chuẩn: 210mm x 148mm (Landscape), Zero Margins
+   A4 / A5 LANDSCAPE PRINT STYLESHEET (@media print)
+   Khổ A4: 297mm x 210mm (Landscape)
+   Khổ A5: 210mm x 148mm (Landscape)
    ========================================================================== */
 
 @page {
-  size: A5 landscape;
+  size: landscape;
   margin: 0;
 }
 
 @media print {
   html, body {
-    width: 210mm !important;
-    height: 148mm !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
@@ -24,6 +23,7 @@
   .app-header,
   .editor-sidebar,
   .preview-toolbar,
+  .mobile-quick-actions,
   .modal-overlay,
   .toast-container,
   button,
@@ -36,8 +36,6 @@
     display: block !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 210mm !important;
-    height: 148mm !important;
     overflow: hidden !important;
   }
 
@@ -46,21 +44,133 @@
     margin: 0 !important;
     padding: 0 !important;
     background: transparent !important;
-    width: 210mm !important;
-    height: 148mm !important;
     overflow: hidden !important;
   }
 
-  .a5-container-scaler {
+  .sheet-viewport {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: auto !important;
+  }
+
+  .sheet-container-scaler {
     transform: none !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  /* ==========================================================================
+     KHỔ A4 LANDSCAPE PRINT (297mm x 210mm)
+     ========================================================================== */
+  body.paper-a4,
+  body.paper-a4 html,
+  body.paper-a4 .app-container,
+  body.paper-a4 .preview-area,
+  body.paper-a4 .sheet-viewport,
+  body.paper-a4 .sheet-container-scaler {
+    width: 297mm !important;
+    height: 210mm !important;
+  }
+
+  body.paper-a4 .print-sheet {
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: 297mm !important;
+    max-height: 210mm !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 12mm 16mm !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    background: #ffffff !important;
+  }
+
+  body.paper-a4 .print-sheet::after {
+    inset: 6mm !important;
+    border-width: 1.5pt !important;
+  }
+
+  body.paper-a4 .qr-layout-dual {
+    gap: 14mm !important;
+    max-width: 265mm !important;
+  }
+
+  body.paper-a4 .qr-card-poem,
+  body.paper-a4 .qr-card-music {
+    border-width: 3.5pt !important;
+    border-radius: 20pt !important;
+    padding: 6mm 8mm 5mm 8mm !important;
+    box-shadow: none !important;
+  }
+
+  body.paper-a4 .qr-box-poem,
+  body.paper-a4 .qr-box-music {
+    width: 62mm !important;
+    height: 62mm !important;
+    padding: 3mm !important;
+  }
+
+  body.paper-a4 .qr-box-poem canvas,
+  body.paper-a4 .qr-box-poem img,
+  body.paper-a4 .qr-box-music canvas,
+  body.paper-a4 .qr-box-music img {
+    width: 56mm !important;
+    height: 56mm !important;
+  }
+
+  body.paper-a4 .qr-subtitle-poem,
+  body.paper-a4 .qr-subtitle-music {
+    font-size: 16pt !important;
+    margin-top: 3.5mm !important;
+  }
+
+  body.paper-a4 .qr-card-single {
+    border-width: 4pt !important;
+    border-radius: 22pt !important;
+    padding: 8mm 12mm 6mm 12mm !important;
+    box-shadow: none !important;
+  }
+
+  body.paper-a4 .qr-box-single {
+    width: 82mm !important;
+    height: 82mm !important;
+    padding: 4mm !important;
+  }
+
+  body.paper-a4 .qr-box-single canvas,
+  body.paper-a4 .qr-box-single img {
+    width: 74mm !important;
+    height: 74mm !important;
+  }
+
+  body.paper-a4 .qr-subtitle-single {
+    font-size: 18pt !important;
+    margin-top: 4mm !important;
+  }
+
+  /* ==========================================================================
+     KHỔ A5 LANDSCAPE PRINT (210mm x 148mm)
+     ========================================================================== */
+  body.paper-a5,
+  body.paper-a5 html,
+  body.paper-a5 .app-container,
+  body.paper-a5 .preview-area,
+  body.paper-a5 .sheet-viewport,
+  body.paper-a5 .sheet-container-scaler {
     width: 210mm !important;
     height: 148mm !important;
   }
 
-  /* Khung tờ A5 in trực tiếp */
-  .a5-sheet {
+  body.paper-a5 .print-sheet {
     width: 210mm !important;
     height: 148mm !important;
     max-width: 210mm !important;
@@ -69,116 +179,76 @@
     border-radius: 0 !important;
     border: none !important;
     margin: 0 !important;
-    padding: 10mm 12mm !important;
+    padding: 9mm 12mm !important;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
     box-sizing: border-box !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: space-between !important;
+    justify-content: center !important;
     background: #ffffff !important;
   }
 
-  .a5-header {
-    margin-top: 0 !important;
-    margin-bottom: 5mm !important;
+  body.paper-a5 .print-sheet::after {
+    inset: 4mm !important;
+    border-width: 1.2pt !important;
   }
 
-  .a5-title {
-    font-size: 26pt !important;
-    color: #111827 !important;
-  }
-
-  .a5-body {
-    flex: 1 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100% !important;
-  }
-
-  /* Single QR Print Mode */
-  .qr-card-single {
-    border-width: 3.5pt !important;
-    border-color: #4f46e5 !important;
-    border-radius: 20pt !important;
-    padding: 5mm 8mm 4mm 8mm !important;
-    box-shadow: none !important;
-    background: #f8fafc !important;
-  }
-
-  .qr-box-single {
-    width: 52mm !important;
-    height: 52mm !important;
-    padding: 2mm !important;
-  }
-
-  .qr-box-single canvas, .qr-box-single img {
-    width: 48mm !important;
-    height: 48mm !important;
-  }
-
-  .qr-subtitle-single {
-    font-size: 15pt !important;
-    margin-top: 3mm !important;
-    color: #3730a3 !important;
-  }
-
-  /* Dual QR Print Mode */
-  .qr-layout-dual {
+  body.paper-a5 .qr-layout-dual {
     gap: 8mm !important;
     max-width: 186mm !important;
   }
 
-  .qr-card-poem {
+  body.paper-a5 .qr-card-poem,
+  body.paper-a5 .qr-card-music {
     border-width: 3pt !important;
-    border-color: #93c5fd !important;
-    border-radius: 18pt !important;
+    border-radius: 16pt !important;
     padding: 4mm 5mm 3mm 5mm !important;
     box-shadow: none !important;
-    background: #eff6ff !important;
   }
 
-  .qr-box-poem {
-    width: 42mm !important;
-    height: 42mm !important;
+  body.paper-a5 .qr-box-poem,
+  body.paper-a5 .qr-box-music {
+    width: 44mm !important;
+    height: 44mm !important;
     padding: 2mm !important;
   }
 
-  .qr-box-poem canvas, .qr-box-poem img {
-    width: 38mm !important;
-    height: 38mm !important;
+  body.paper-a5 .qr-box-poem canvas,
+  body.paper-a5 .qr-box-poem img,
+  body.paper-a5 .qr-box-music canvas,
+  body.paper-a5 .qr-box-music img {
+    width: 40mm !important;
+    height: 40mm !important;
   }
 
-  .qr-subtitle-poem {
-    font-size: 13.5pt !important;
+  body.paper-a5 .qr-subtitle-poem,
+  body.paper-a5 .qr-subtitle-music {
+    font-size: 13pt !important;
     margin-top: 2.5mm !important;
-    color: #1e40af !important;
   }
 
-  .qr-card-music {
-    border-width: 3pt !important;
-    border-color: #fca5a5 !important;
+  body.paper-a5 .qr-card-single {
+    border-width: 3.5pt !important;
     border-radius: 18pt !important;
-    padding: 4mm 5mm 3mm 5mm !important;
+    padding: 5mm 8mm 4mm 8mm !important;
     box-shadow: none !important;
-    background: #fff1f2 !important;
   }
 
-  .qr-box-music {
-    width: 42mm !important;
-    height: 42mm !important;
-    padding: 2mm !important;
+  body.paper-a5 .qr-box-single {
+    width: 56mm !important;
+    height: 56mm !important;
+    padding: 2.5mm !important;
   }
 
-  .qr-box-music canvas, .qr-box-music img {
-    width: 38mm !important;
-    height: 38mm !important;
+  body.paper-a5 .qr-box-single canvas,
+  body.paper-a5 .qr-box-single img {
+    width: 51mm !important;
+    height: 51mm !important;
   }
 
-  .qr-subtitle-music {
-    font-size: 13.5pt !important;
-    margin-top: 2.5mm !important;
-    color: #9f1239 !important;
+  body.paper-a5 .qr-subtitle-single {
+    font-size: 15pt !important;
+    margin-top: 3mm !important;
   }
 }
