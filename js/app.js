@@ -1051,19 +1051,34 @@ function escapeHtml(text) {
 // ==========================================================================
 const API_CONFIG = {
   storageKey: 'gemini_api_key_custom',
-  activeKey: localStorage.getItem('gemini_api_key_custom') || ''
+  defaultKey: 'AIzaSyAns5lL7TT_XCcSo8AWbXBkWXXVFjuDHss', // Key tích hợp sẵn cho tất cả mọi người dùng chung
+  get activeKey() {
+    return localStorage.getItem(this.storageKey) || this.defaultKey;
+  },
+  get isCustom() {
+    return !!localStorage.getItem(this.storageKey);
+  }
 };
 
 function checkApiHealth() {
   const hasKey = !!API_CONFIG.activeKey;
   if (DOM.apiStatusDot) DOM.apiStatusDot.classList.toggle('active', hasKey);
   if (DOM.apiHelperText) {
-    DOM.apiHelperText.innerText = hasKey ? 'Trạng thái: AI Sẵn Sàng (Custom Key)' : 'Trạng thái: AI Sẵn Sàng (Hệ Thống)';
+    if (API_CONFIG.isCustom) {
+      DOM.apiHelperText.innerText = 'Trạng thái: AI Sẵn Sàng (Key Cá Nhân)';
+    } else if (API_CONFIG.activeKey) {
+      DOM.apiHelperText.innerText = 'Trạng thái: AI Sẵn Sàng (Key Tích Hợp Sẵn)';
+    } else {
+      DOM.apiHelperText.innerText = 'Trạng thái: Chưa có API Key';
+    }
   }
 }
 
 function openApiKeyModal() {
-  if (DOM.inputApiKey) DOM.inputApiKey.value = API_CONFIG.activeKey;
+  if (DOM.inputApiKey) {
+    DOM.inputApiKey.value = localStorage.getItem(API_CONFIG.storageKey) || '';
+    DOM.inputApiKey.placeholder = API_CONFIG.defaultKey ? 'Đang dùng Key mặc định của web (nhập để đổi key riêng)...' : 'AIzaSy...';
+  }
   if (DOM.apiKeyTestStatus) DOM.apiKeyTestStatus.style.display = 'none';
   if (DOM.apiKeyModal) DOM.apiKeyModal.classList.add('active');
 }
@@ -1088,20 +1103,18 @@ function saveApiKey() {
     clearApiKey();
     return;
   }
-  API_CONFIG.activeKey = key;
   localStorage.setItem(API_CONFIG.storageKey, key);
   checkApiHealth();
   closeApiKeyModal();
-  showToast('Đã lưu Gemini API Key thành công!');
+  showToast('Đã lưu Gemini API Key riêng thành công!');
 }
 
 function clearApiKey() {
-  API_CONFIG.activeKey = '';
   localStorage.removeItem(API_CONFIG.storageKey);
   if (DOM.inputApiKey) DOM.inputApiKey.value = '';
   checkApiHealth();
   closeApiKeyModal();
-  showToast('Đã xóa API Key tùy chỉnh');
+  showToast('Đã chuyển về dùng API Key mặc định của hệ thống');
 }
 
 async function testApiKeyConnection() {
