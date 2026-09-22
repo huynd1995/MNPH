@@ -251,4 +251,63 @@
     font-size: 15pt !important;
     margin-top: 3mm !important;
   }
+
+  /* ==========================================================================
+     HEADER BANNER & CENTER STICKER BADGE PRINT STYLES
+     ========================================================================== */
+  .sheet-header-banner {
+    display: block !important;
+    text-align: center !important;
+  }
+
+  body.paper-a4 .sheet-header-banner {
+    margin-bottom: 5mm !important;
+  }
+
+  body.paper-a4 .sheet-banner-badge {
+    font-size: 11pt !important;
+    padding: 2mm 8mm !important;
+    border-radius: 12pt !important;
+    margin-bottom: 2mm !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.paper-a4 .sheet-banner-title {
+    font-size: 24pt !important;
+    margin-bottom: 1.5mm !important;
+  }
+
+  body.paper-a4 .sheet-banner-author {
+    font-size: 13pt !important;
+  }
+
+  body.paper-a5 .sheet-header-banner {
+    margin-bottom: 3mm !important;
+  }
+
+  body.paper-a5 .sheet-banner-badge {
+    font-size: 8.5pt !important;
+    padding: 1.5mm 6mm !important;
+    border-radius: 10pt !important;
+    margin-bottom: 1mm !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.paper-a5 .sheet-banner-title {
+    font-size: 17pt !important;
+    margin-bottom: 1mm !important;
+  }
+
+  body.paper-a5 .sheet-banner-author {
+    font-size: 10pt !important;
+  }
+
+  .qr-center-badge {
+    display: flex !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }
+

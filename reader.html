@@ -17,12 +17,13 @@
 
   <style>
     :root {
-      --primary: #4f46e5;
+      --primary: #4338ca;
       --accent: #f59e0b;
+      --accent-pink: #ec4899;
       --bg-reader: #fef7ee;
       --card-bg: #ffffff;
       --text-main: #1f2937;
-      --text-muted: #6b7280;
+      --text-muted: #64748b;
     }
 
     * {
@@ -34,12 +35,14 @@
 
     body {
       font-family: 'Nunito', sans-serif;
-      background: linear-gradient(180deg, #fef3c7 0%, #fef7ee 20%, #f0fdf4 100%);
+      background: linear-gradient(180deg, #fef3c7 0%, #fff1f2 35%, #f0fdf4 100%);
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
       justify-content: center;
-      padding: 12px 12px 32px 12px;
+      padding: 12px 12px 36px 12px;
+      position: relative;
+      overflow-x: hidden;
     }
 
     .reader-container {
@@ -47,52 +50,63 @@
       max-width: 480px;
       background: var(--card-bg);
       border-radius: 28px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 16px 36px -6px rgba(245, 158, 11, 0.18), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      border: 2px solid #fed7aa;
+      border: 3px solid #fed7aa;
+      position: relative;
+      z-index: 2;
     }
 
     /* Top Bar */
     .reader-header {
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      background: linear-gradient(135deg, #f59e0b, #ec4899);
       padding: 12px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      color: #78350f;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
     .reader-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(255, 255, 255, 0.85);
-      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 4px 12px;
       border-radius: 20px;
       font-family: 'Quicksand', sans-serif;
-      font-weight: 700;
-      font-size: 0.8rem;
+      font-weight: 800;
+      font-size: 0.82rem;
+      color: #9a3412;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    .header-tools {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .audio-btn {
       background: white;
       border: none;
-      color: #d97706;
-      width: 36px;
-      height: 36px;
+      color: #ea580c;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      transition: transform 0.15s;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+      transition: transform 0.15s ease;
     }
 
     .audio-btn:active {
-      transform: scale(0.92);
+      transform: scale(0.9);
     }
 
     /* Illustration */
@@ -108,12 +122,69 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.3s ease;
+      transition: transform 0.4s ease;
+    }
+
+    .illustration-box:hover .illustration-img {
+      transform: scale(1.03);
+    }
+
+    /* Reader Control Strip */
+    .reader-toolbar-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fffbeb;
+      padding: 8px 16px;
+      border-bottom: 1.5px dashed #fde68a;
+    }
+
+    .rate-selector {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #92400e;
+    }
+
+    .rate-btn {
+      background: #ffffff;
+      border: 1px solid #fcd34d;
+      color: #b45309;
+      border-radius: 12px;
+      padding: 2px 7px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .rate-btn.active {
+      background: #f59e0b;
+      color: #ffffff;
+      border-color: #f59e0b;
+    }
+
+    .font-zoom-tools {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-font-zoom {
+      background: #ffffff;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+      border-radius: 8px;
+      padding: 2px 7px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      cursor: pointer;
     }
 
     /* Poem Content Section */
     .poem-body {
-      padding: 24px 20px;
+      padding: 20px 18px;
       text-align: center;
       display: flex;
       flex-direction: column;
@@ -122,22 +193,22 @@
 
     .poem-title {
       font-family: 'Quicksand', sans-serif;
-      font-size: 1.85rem;
+      font-size: 1.95rem;
       font-weight: 800;
       color: #9a3412;
-      line-height: 1.25;
+      line-height: 1.2;
       margin-bottom: 6px;
     }
 
     .poem-author {
-      font-size: 0.95rem;
-      color: #6b7280;
-      font-weight: 600;
-      margin-bottom: 20px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 18px;
       background: #fef2f2;
       color: #b91c1c;
-      padding: 3px 12px;
-      border-radius: 12px;
+      padding: 3px 14px;
+      border-radius: 14px;
+      display: inline-block;
     }
 
     .poem-verses {
@@ -148,20 +219,21 @@
       color: #1e293b;
       white-space: pre-line;
       text-align: center;
-      background: #fbfdfe;
-      border: 2px dashed #e2e8f0;
+      background: #fcfefe;
+      border: 2.5px dashed #fed7aa;
       border-radius: 20px;
       padding: 20px 16px;
       width: 100%;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);
+      transition: font-size 0.2s ease;
     }
 
     /* Actions Footer */
     .reader-footer {
-      padding: 0 20px 24px 20px;
+      padding: 0 18px 24px 18px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .action-btn {
@@ -169,42 +241,63 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 12px 16px;
+      padding: 13px 16px;
       border-radius: 14px;
       font-family: 'Quicksand', sans-serif;
-      font-size: 1rem;
-      font-weight: 700;
+      font-size: 1.05rem;
+      font-weight: 800;
       text-decoration: none;
       border: none;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .btn-read-aloud {
       background: linear-gradient(135deg, #10b981, #059669);
       color: white;
-      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-read-aloud:hover {
+      transform: translateY(-2px);
     }
 
     .btn-read-aloud.speaking {
       background: linear-gradient(135deg, #ef4444, #dc2626);
-      animation: pulse 1.5s infinite;
+      animation: pulse 1.2s infinite;
     }
 
     .btn-youtube {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
+      background: linear-gradient(135deg, #ef4444, #e11d48);
       color: white;
-      box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-youtube:hover {
+      transform: translateY(-2px);
     }
 
     @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.75; }
-      100% { opacity: 1; }
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    /* Sparkles Canvas */
+    #celebrationCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 100;
     }
   </style>
 </head>
 <body>
+  <canvas id="celebrationCanvas"></canvas>
+
   <div class="reader-container">
     <!-- Header -->
     <div class="reader-header">
@@ -212,14 +305,31 @@
         <i data-lucide="sparkles" style="width: 16px; height: 16px; color: #f59e0b;"></i>
         <span>Bé Học Thơ Mầm Non</span>
       </div>
-      <button class="audio-btn" id="headerAudioBtn" title="Đọc bài thơ">
-        <i data-lucide="volume-2" style="width: 18px; height: 18px;"></i>
-      </button>
+      <div class="header-tools">
+        <button class="audio-btn" id="headerAudioBtn" title="Nghe đọc bài thơ">
+          <i data-lucide="volume-2" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
     </div>
 
     <!-- Illustration Image -->
     <div class="illustration-box">
       <img id="poemImg" class="illustration-img" src="" alt="Tranh minh họa bài thơ">
+    </div>
+
+    <!-- Toolbar Strip for Speech Rate & Font Resize -->
+    <div class="reader-toolbar-strip">
+      <div class="rate-selector">
+        <span>Tốc độ:</span>
+        <button type="button" class="rate-btn" data-rate="0.75" id="btnRateSlow">Chậm</button>
+        <button type="button" class="rate-btn active" data-rate="0.88" id="btnRateNormal">Vừa</button>
+        <button type="button" class="rate-btn" data-rate="1.0" id="btnRateFast">Nhanh</button>
+      </div>
+
+      <div class="font-zoom-tools">
+        <button type="button" class="btn-font-zoom" id="btnFontSmaller" title="Giảm cỡ chữ">A-</button>
+        <button type="button" class="btn-font-zoom" id="btnFontBigger" title="Tăng cỡ chữ">A+</button>
+      </div>
     </div>
 
     <!-- Poem Content -->
@@ -251,6 +361,8 @@
 
     let currentPoem = null;
     let isSpeaking = false;
+    let speechRate = 0.88;
+    let currentFontSize = 1.25;
     let speechSynth = window.speechSynthesis;
 
     function initReader() {
@@ -309,10 +421,9 @@
       const textToRead = `Bài thơ: ${currentPoem.title}. Tác giả: ${currentPoem.author || 'Sưu tầm'}. ${currentPoem.content}`;
       const utterance = new SpeechSynthesisUtterance(textToRead);
       utterance.lang = 'vi-VN';
-      utterance.rate = 0.85; // Giọng đọc chậm rãi cho bé dễ nghe
-      utterance.pitch = 1.1;
+      utterance.rate = speechRate;
+      utterance.pitch = 1.05;
 
-      // Tìm giọng tiếng Việt nếu có
       const voices = speechSynth.getVoices();
       const viVoice = voices.find(v => v.lang.includes('vi') || v.lang.includes('VN'));
       if (viVoice) utterance.voice = viVoice;
@@ -325,6 +436,7 @@
       utterance.onend = () => {
         isSpeaking = false;
         updateSpeechBtn(false);
+        triggerCelebration();
       };
 
       utterance.onerror = () => {
@@ -347,6 +459,79 @@
       }
     }
 
+    // Hiệu ứng pháo hoa sao chúc mừng bé
+    function triggerCelebration() {
+      const canvas = document.getElementById('celebrationCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#f59e0b', '#ec4899', '#10b981', '#3b82f6', '#8b5cf6'];
+
+      for (let i = 0; i < 60; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 12,
+          vy: (Math.random() - 0.5) * 12 - 2,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          alpha: 1
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = false;
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.25; // gravity
+          p.alpha -= 0.02;
+          if (p.alpha > 0) {
+            active = true;
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        });
+        if (active) requestAnimationFrame(animate);
+        else ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      animate();
+    }
+
+    // Chỉnh tốc độ đọc
+    document.querySelectorAll('.rate-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.rate-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        speechRate = parseFloat(btn.getAttribute('data-rate'));
+        if (isSpeaking) {
+          speechSynth.cancel();
+          isSpeaking = false;
+          toggleSpeech();
+        }
+      });
+    });
+
+    // Chỉnh cỡ chữ
+    document.getElementById('btnFontBigger').addEventListener('click', () => {
+      currentFontSize = Math.min(2.0, currentFontSize + 0.15);
+      document.getElementById('poemVerses').style.fontSize = currentFontSize + 'rem';
+    });
+
+    document.getElementById('btnFontSmaller').addEventListener('click', () => {
+      currentFontSize = Math.max(0.9, currentFontSize - 0.15);
+      document.getElementById('poemVerses').style.fontSize = currentFontSize + 'rem';
+    });
+
     document.getElementById('readAloudBtn').addEventListener('click', toggleSpeech);
     document.getElementById('headerAudioBtn').addEventListener('click', toggleSpeech);
 
@@ -355,3 +540,4 @@
   </script>
 </body>
 </html>
+

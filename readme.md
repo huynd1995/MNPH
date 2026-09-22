@@ -1,23 +1,29 @@
-# Ứng Dụng Tra Cứu & Tạo Thẻ Bìa Bài Thơ Mầm Non A5 Nằm Ngang (FastAPI + Gemini AI Search Grounding)
+# Ứng Dụng Tra Cứu & Tạo Thẻ Bìa Bài Thơ Mầm Non A4 / A5 Nằm Ngang (FastAPI + Gemini AI)
 
-Hệ thống tra cứu bài thơ mầm non trực tuyến theo thời gian thực sử dụng **FastAPI** và **Gemini API (Google Search Grounding)** kết hợp **Studio tạo mã QR và thẻ bìa học liệu khổ A5 nằm ngang** chuẩn in ấn dành cho giáo viên mầm non.
+Hệ thống tra cứu bài thơ mầm non trực tuyến theo thời gian thực sử dụng **FastAPI** và **Gemini API (Google Search Grounding)** kết hợp **Studio tạo mã QR và thẻ bìa học liệu khổ A4 / A5 nằm ngang** chuẩn in ấn dành cho giáo viên mầm non.
 
 ---
 
-## 🌟 Tính Năng Nổi Bật
+## 🌟 Tính Năng Nổi Bật & Bản Nâng Cấp Lớn
 
 1. **Tra cứu AI không phụ thuộc database tĩnh**: Tự động tra cứu trực tuyến qua Google Search thông qua mô hình Gemini (Gemini 2.5 / 1.5 Flash).
-2. **Nhận diện thông minh**: Hỗ trợ tìm kiếm theo tên bài thơ, một hoặc nhiều câu thơ bất kỳ trong bài, từ khóa không dấu hoặc sai chính tả.
-3. **Đầu ra có cấu trúc (Structured JSON)**: Chuẩn hóa tự động tên bài thơ, tác giả, lời thơ phân dòng, chủ đề, tranh minh họa và link nhạc thiếu nhi YouTube liên quan.
-4. **Studio Tạo Thẻ Bìa A5 Chuẩn In Ấn**:
-   - Khổ giấy chuẩn **A5 Nằm Ngang (210mm x 148mm)**, tỷ lệ 1.414.
-   - Bố cục tối giản: Tiêu đề lớn và khung mã QR.
-   - Chuyển đổi linh hoạt: **1 Mã QR To** (căn giữa) hoặc **2 Mã QR Song Song** (Khung xanh: Xem tranh bài thơ; Khung đỏ: Nghe nhạc YouTube).
-   - In trực tiếp qua trình duyệt với `@page { size: A5 landscape; margin: 0; }` không bị nhảy trang hoặc Tải ảnh PNG chất lượng cao.
-5. **Trang Đọc Thơ Di Động (Mobile Reader)**:
-   - Giao diện thân thiện khi phụ huynh/học sinh quét QR.
-   - Tranh minh họa sắc nét, lời thơ to rõ.
-   - Tích hợp nút **"Đọc thơ cho bé nghe"** tự động phát âm tiếng Việt chuẩn.
+2. **Bộ Lọc Theo Chủ Đề Giáo Án**: Lọc nhanh kho thơ theo các chủ đề: *Gia đình, Động vật, Thực vật, Kỹ năng sống, Nghề nghiệp...*
+3. **Studio Tạo Thẻ Khổ A4 / A5 Chuẩn In Ấn**:
+   - Khổ in ngang **A4 (297mm x 210mm)** & **A5 (210mm x 148mm)**.
+   - Chuyển đổi linh hoạt: **1 Mã QR To** hoặc **2 Mã QR Song Song** (Thơ & Nhạc YouTube).
+   - Tinh chỉnh phóng đại QR từ 80% đến 135% quét siêu nhạy từ xa.
+4. **Hệ Thống 8 Bảng Màu Chủ Đề Mầm Non Rực Rỡ**:
+   - *Chuẩn Mầm Non, Cầu Vồng Tuổi Thơ, Mặt Trời Tươi Vui, Vườn Cổ Tích, Kẹo Bông Gòn, Đại Dương Kỳ Thú, Ngân Hà Khám Phá, Đen Trắng Siêu Nét*.
+5. **Các Tính Năng Sáng Tạo Nâng Cao (Không ảnh hưởng nội dung cũ)**:
+   - **Tiêu Đề & Góc Học Liệu trên thẻ in**: Tùy chọn in thêm tên góc thơ, tên bài và tác giả ở đầu thẻ.
+   - **Sticker / Icon nhận diện tâm mã QR**: Gắn biểu tượng cuốn sách 📖 và nốt nhạc 🎵 ngay giữa QR (quét 100% nhạy bén).
+   - **Khung viền trang trí nghệ thuật**: 4 kiểu viền (Nét đứt mầm non, Viền đôi trang nhã, Cầu vồng rực rỡ, Tối giản mực in).
+   - **Thanh công cụ Zoom Preview**: Phóng to (+), thu nhỏ (-), vừa màn hình (Fit) trực quan.
+   - **Chia sẻ link gửi phụ huynh**: Sao chép nhanh liên kết đọc thơ gửi trực tiếp vào nhóm Zalo/Facebook lớp.
+6. **Trang Đọc Thơ Di Động Tương Tác (`reader.html`)**:
+   - Giao diện sách truyện tranh thiếu nhi sống động, dễ thương.
+   - Tùy chỉnh tốc độ đọc (Chậm 0.75x, Vừa 0.88x, Nhanh 1.0x), phóng to/thu nhỏ cỡ chữ.
+   - Hiệu ứng pháo hoa sao chúc mừng bé khi đọc xong bài thơ.
 
 ---
 

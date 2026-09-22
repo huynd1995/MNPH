@@ -2,7 +2,7 @@
  * Kindergarten A4 & A5 Poem & Media QR Card Generator - Main Application Controller
  */
 
-// Preset Theme Palettes
+// Preset Theme Palettes (8 Bảng Màu Rực Rỡ Chuẩn Mầm Non)
 const PRESET_THEMES = {
   default: {
     name: "Chuẩn Mầm Non",
@@ -15,8 +15,30 @@ const PRESET_THEMES = {
     bgMusic: '#fff1f2',
     borderMusic: '#fecdd3'
   },
+  rainbow: {
+    name: "Cầu Vồng Tuổi Thơ",
+    qrPoem: '#0284c7',
+    textPoem: '#0369a1',
+    bgPoem: '#f0f9ff',
+    borderPoem: '#bae6fd',
+    qrMusic: '#d97706',
+    textMusic: '#b45309',
+    bgMusic: '#fffbeb',
+    borderMusic: '#fde68a'
+  },
+  sunshine: {
+    name: "Mặt Trời Tươi Vui",
+    qrPoem: '#ea580c',
+    textPoem: '#c2410c',
+    bgPoem: '#fff7ed',
+    borderPoem: '#fed7aa',
+    qrMusic: '#e11d48',
+    textMusic: '#be123c',
+    bgMusic: '#fff1f2',
+    borderMusic: '#fecdd3'
+  },
   nature: {
-    name: "Thiên Nhiên",
+    name: "Vườn Cổ Tích",
     qrPoem: '#15803d',
     textPoem: '#166534',
     bgPoem: '#f0fdf4',
@@ -27,7 +49,7 @@ const PRESET_THEMES = {
     borderMusic: '#fed7aa'
   },
   pastel: {
-    name: "Kẹo Ngọt",
+    name: "Kẹo Bông Gòn",
     qrPoem: '#7c3aed',
     textPoem: '#6d28d9',
     bgPoem: '#f5f3ff',
@@ -38,7 +60,7 @@ const PRESET_THEMES = {
     borderMusic: '#fbcfe8'
   },
   ocean: {
-    name: "Đại Dương",
+    name: "Đại Dương Kỳ Thú",
     qrPoem: '#0284c7',
     textPoem: '#0369a1',
     bgPoem: '#f0f9ff',
@@ -48,8 +70,19 @@ const PRESET_THEMES = {
     bgMusic: '#f0fdfa',
     borderMusic: '#99f6e4'
   },
+  galaxy: {
+    name: "Ngân Hà Khám Phá",
+    qrPoem: '#4338ca',
+    textPoem: '#3730a3',
+    bgPoem: '#eef2ff',
+    borderPoem: '#c7d2fe',
+    qrMusic: '#0891b2',
+    textMusic: '#0e7490',
+    bgMusic: '#ecfeff',
+    borderMusic: '#a5f3fc'
+  },
   mono: {
-    name: "Đen Trắng",
+    name: "Đen Trắng Siêu Nét",
     qrPoem: '#111827',
     textPoem: '#1f2937',
     bgPoem: '#f9fafb',
@@ -95,8 +128,10 @@ Cười trong nắng vàng.`,
   poemSubtitle: 'Xem tranh bài thơ',
   musicSubtitle: 'Nghe nhạc YouTube',
   scale: 1,
+  manualZoom: 1.0,
   activeModel: 'gemini-1.5-flash',
   mobileView: 'editor', // 'editor' or 'preview'
+  selectedCategory: 'Tất cả',
 
   // Style Settings
   theme: 'default',
@@ -109,7 +144,16 @@ Cười trong nắng vàng.`,
   colorQrMusic: '#be123c',
   colorTextMusic: '#9f1239',
   colorBgMusic: '#fff1f2',
-  colorBorderMusic: '#fecdd3'
+  colorBorderMusic: '#fecdd3',
+
+  // Decorative & Creative Features (Bảo toàn mặc định)
+  showHeaderBanner: false,
+  sheetBadgeText: 'GÓC THƠ MẦM NON',
+  showBannerTitle: true,
+  showBannerAuthor: true,
+  showCenterQrIcon: true,
+  centerIconType: 'standard', // 'standard', 'star', 'flower'
+  borderStyle: 'dashed' // 'dashed', 'double', 'rainbow', 'minimal'
 };
 
 // DOM Elements Cache
@@ -121,10 +165,12 @@ const DOM = {
   btnMobileTabPreview: document.getElementById('btnMobileTabPreview'),
   btnMobileBackToEdit: document.getElementById('btnMobileBackToEdit'),
   mobilePaperLabel: document.getElementById('mobilePaperLabel'),
+  btnShareLink: document.getElementById('btnShareLink'),
   
   // Search & Autocomplete
   searchInput: document.getElementById('searchPoemInput'),
   autocompleteDropdown: document.getElementById('autocompleteDropdown'),
+  categoryChipsList: document.getElementById('categoryChipsList'),
   btnAiSearch: document.getElementById('btnAiSearch'),
   aiSearchIcon: document.getElementById('aiSearchIcon'),
   aiSearchText: document.getElementById('aiSearchText'),
@@ -200,6 +246,31 @@ const DOM = {
   paperBadgePill: document.getElementById('paperBadgePill'),
   btnPrintText: document.getElementById('btnPrintText'),
   btnMobilePrintText: document.getElementById('btnMobilePrintText'),
+
+  // Zoom Controls
+  btnZoomIn: document.getElementById('btnZoomIn'),
+  btnZoomOut: document.getElementById('btnZoomOut'),
+  btnZoomFit: document.getElementById('btnZoomFit'),
+  zoomVal: document.getElementById('zoomVal'),
+
+  // Decorative & Header Banner Elements
+  toggleShowHeaderBanner: document.getElementById('toggleShowHeaderBanner'),
+  sheetBannerConfigGroup: document.getElementById('sheetBannerConfigGroup'),
+  inputSheetBadgeText: document.getElementById('inputSheetBadgeText'),
+  toggleShowBannerTitle: document.getElementById('toggleShowBannerTitle'),
+  toggleShowBannerAuthor: document.getElementById('toggleShowBannerAuthor'),
+  sheetHeaderBanner: document.getElementById('sheetHeaderBanner'),
+  sheetBannerBadge: document.getElementById('sheetBannerBadge'),
+  sheetBannerTitle: document.getElementById('sheetBannerTitle'),
+  sheetBannerAuthor: document.getElementById('sheetBannerAuthor'),
+
+  // Center QR Badge Controls
+  toggleCenterQrIcon: document.getElementById('toggleCenterQrIcon'),
+  centerIconStyleGroup: document.getElementById('centerIconStyleGroup'),
+  btnIconStandard: document.getElementById('btnIconStandard'),
+  btnIconStar: document.getElementById('btnIconStar'),
+  btnIconFlower: document.getElementById('btnIconFlower'),
+  borderStyleBtns: document.querySelectorAll('.border-style-btn'),
   
   // Layout Containers & Cards
   layoutSingle: document.getElementById('layoutSingle'),
@@ -239,6 +310,7 @@ function initApp() {
   }
   document.body.classList.add('mobile-view-editor');
   bindEvents();
+  renderCategoryChips();
   loadInitialPoem();
   setPaperFormat('a4'); // Mặc định A4
   setupResponsiveScale();
@@ -528,6 +600,70 @@ function bindEvents() {
   if (DOM.phoneModal) {
     DOM.phoneModal.addEventListener('click', (e) => {
       if (e.target === DOM.phoneModal) closePhonePreview();
+    });
+  }
+
+  // 14. Nút Sao chép liên kết đọc thơ cho phụ huynh
+  if (DOM.btnShareLink) DOM.btnShareLink.addEventListener('click', copyShareLink);
+
+  // 15. Bộ điều khiển Zoom Canvas
+  if (DOM.btnZoomIn) DOM.btnZoomIn.addEventListener('click', () => changeManualZoom(0.1));
+  if (DOM.btnZoomOut) DOM.btnZoomOut.addEventListener('click', () => changeManualZoom(-0.1));
+  if (DOM.btnZoomFit) DOM.btnZoomFit.addEventListener('click', resetManualZoom);
+
+  // 16. Tiêu đề & Góc Học Liệu trên thẻ in
+  if (DOM.toggleShowHeaderBanner) {
+    DOM.toggleShowHeaderBanner.addEventListener('change', handleToggleHeaderBanner);
+  }
+  if (DOM.inputSheetBadgeText) {
+    DOM.inputSheetBadgeText.addEventListener('input', (e) => {
+      appState.sheetBadgeText = e.target.value;
+      updateHeaderBannerDisplay();
+    });
+  }
+  if (DOM.toggleShowBannerTitle) {
+    DOM.toggleShowBannerTitle.addEventListener('change', (e) => {
+      appState.showBannerTitle = e.target.checked;
+      updateHeaderBannerDisplay();
+    });
+  }
+  if (DOM.toggleShowBannerAuthor) {
+    DOM.toggleShowBannerAuthor.addEventListener('change', (e) => {
+      appState.showBannerAuthor = e.target.checked;
+      updateHeaderBannerDisplay();
+    });
+  }
+
+  // 17. Huy hiệu / Sticker tâm mã QR
+  if (DOM.toggleCenterQrIcon) {
+    DOM.toggleCenterQrIcon.addEventListener('change', (e) => {
+      appState.showCenterQrIcon = e.target.checked;
+      if (DOM.centerIconStyleGroup) {
+        DOM.centerIconStyleGroup.style.display = e.target.checked ? 'block' : 'none';
+      }
+      updateCardDisplay();
+    });
+  }
+
+  const iconBtns = [DOM.btnIconStandard, DOM.btnIconStar, DOM.btnIconFlower];
+  iconBtns.forEach(btn => {
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      iconBtns.forEach(b => b && b.classList.remove('active'));
+      btn.classList.add('active');
+      const iconType = btn.getAttribute('data-icon');
+      appState.centerIconType = iconType;
+      updateCardDisplay();
+    });
+  });
+
+  // 18. Kiểu khung viền trang trí tờ in
+  if (DOM.borderStyleBtns) {
+    DOM.borderStyleBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const borderStyle = btn.getAttribute('data-border');
+        setBorderStyle(borderStyle);
+      });
     });
   }
 }
@@ -878,6 +1014,8 @@ function updateCardDisplay() {
   const multiplier = appState.qrScaleMultiplier || 1.0;
 
   // 4. Sinh QR Code với kích cỡ phù hợp theo khổ giấy và thanh trượt
+  const centerIconOption = appState.showCenterQrIcon ? appState.centerIconType : null;
+
   if (appState.qrMode === '1') {
     // 1 QR Mode: A4: 310px, A5: 210px
     const baseSize = isA4 ? 310 : 210;
@@ -887,7 +1025,8 @@ function updateCardDisplay() {
       QREngine.renderQR(DOM.qrSingleContainer, readerUrl, {
         size: qrPx,
         colorDark: appState.colorQrPoem,
-        colorLight: '#ffffff'
+        colorLight: '#ffffff',
+        centerIcon: centerIconOption ? (centerIconOption === 'standard' ? 'book' : centerIconOption) : null
       });
     }
   } else {
@@ -900,7 +1039,8 @@ function updateCardDisplay() {
       QREngine.renderQR(DOM.qrPoemContainer, readerUrl, {
         size: qrPx,
         colorDark: appState.colorQrPoem,
-        colorLight: '#ffffff'
+        colorLight: '#ffffff',
+        centerIcon: centerIconOption ? (centerIconOption === 'standard' ? 'book' : centerIconOption) : null
       });
     }
 
@@ -910,10 +1050,14 @@ function updateCardDisplay() {
       QREngine.renderQR(DOM.qrMusicContainer, musicUrl, {
         size: qrPx,
         colorDark: appState.colorQrMusic,
-        colorLight: '#ffffff'
+        colorLight: '#ffffff',
+        centerIcon: centerIconOption ? (centerIconOption === 'standard' ? 'music' : centerIconOption) : null
       });
     }
   }
+
+  // 5. Cập nhật banner tiêu đề tờ in nếu có
+  updateHeaderBannerDisplay();
 }
 
 /**
@@ -942,12 +1086,142 @@ function setupResponsiveScale() {
   // Tính tỷ lệ scale hoàn hảo không bị méo và không bị tràn viền
   let scale = Math.min(availableWidth / sheetWidth, availableHeight / sheetHeight);
 
-  // Giới hạn scale
+  // Giới hạn scale tự nhiên
   if (scale > 1.05) scale = 1.0;
   if (scale < 0.25) scale = 0.25;
 
   appState.scale = scale;
-  DOM.sheetScaler.style.transform = `scale(${scale})`;
+  const finalScale = scale * (appState.manualZoom || 1.0);
+  DOM.sheetScaler.style.transform = `scale(${finalScale})`;
+
+  if (DOM.zoomVal) {
+    DOM.zoomVal.innerText = `${Math.round((appState.manualZoom || 1.0) * 100)}%`;
+  }
+}
+
+/**
+ * Sao chép liên kết đọc thơ cho phụ huynh
+ */
+function copyShareLink() {
+  const poemPayload = {
+    id: appState.id,
+    title: appState.title,
+    author: appState.author,
+    content: appState.content,
+    coverImage: appState.coverImage,
+    youtubeUrl: appState.youtubeUrl,
+    youtubeTitle: appState.youtubeTitle
+  };
+  const url = QREngine.generateReaderUrl(poemPayload);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('📋 Đã sao chép link gửi phụ huynh!');
+    }).catch(() => {
+      prompt("Sao chép link gửi phụ huynh:", url);
+    });
+  } else {
+    prompt("Sao chép link gửi phụ huynh:", url);
+  }
+}
+
+/**
+ * Hiển thị danh sách Chips chủ đề mầm non
+ */
+function renderCategoryChips() {
+  if (!DOM.categoryChipsList || typeof getPoemCategories !== 'function') return;
+  const cats = getPoemCategories();
+  DOM.categoryChipsList.innerHTML = '';
+
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `category-chip ${appState.selectedCategory === cat ? 'active' : ''}`;
+    btn.innerText = cat;
+    btn.addEventListener('click', () => filterByCategory(cat));
+    DOM.categoryChipsList.appendChild(btn);
+  });
+}
+
+/**
+ * Lọc theo chủ đề mầm non
+ */
+function filterByCategory(category) {
+  appState.selectedCategory = category;
+  renderCategoryChips();
+
+  if (category === 'Tất cả') {
+    loadInitialPoem();
+    showToast('Hiển thị tất cả chủ đề');
+  } else {
+    const matched = POEMS_DATABASE.filter(p => p.category === category);
+    if (matched.length > 0) {
+      selectPoem(matched[0]);
+      showToast(`Đã chọn chủ đề: ${category} (${matched.length} bài)`);
+    }
+  }
+}
+
+/**
+ * Điều chỉnh Zoom Canvas thủ công
+ */
+function changeManualZoom(delta) {
+  appState.manualZoom = Math.max(0.4, Math.min(2.0, (appState.manualZoom || 1.0) + delta));
+  setupResponsiveScale();
+}
+
+function resetManualZoom() {
+  appState.manualZoom = 1.0;
+  setupResponsiveScale();
+  showToast('Đã căn vừa màn hình');
+}
+
+/**
+ * Bật/Tắt và cập nhật Header Banner trên tờ in
+ */
+function handleToggleHeaderBanner(e) {
+  appState.showHeaderBanner = e.target.checked;
+  if (DOM.sheetBannerConfigGroup) {
+    DOM.sheetBannerConfigGroup.style.display = e.target.checked ? 'block' : 'none';
+  }
+  updateHeaderBannerDisplay();
+  showToast(e.target.checked ? 'Đã bật tiêu đề trên tờ in' : 'Đã ẩn tiêu đề trên tờ in');
+}
+
+function updateHeaderBannerDisplay() {
+  if (!DOM.sheetHeaderBanner) return;
+  if (appState.showHeaderBanner) {
+    DOM.sheetHeaderBanner.style.display = 'block';
+    if (DOM.sheetBannerBadge) DOM.sheetBannerBadge.innerText = appState.sheetBadgeText || 'GÓC THƠ MẦM NON';
+    if (DOM.sheetBannerTitle) {
+      DOM.sheetBannerTitle.style.display = appState.showBannerTitle ? 'block' : 'none';
+      DOM.sheetBannerTitle.innerText = appState.title || '';
+    }
+    if (DOM.sheetBannerAuthor) {
+      DOM.sheetBannerAuthor.style.display = appState.showBannerAuthor ? 'block' : 'none';
+      DOM.sheetBannerAuthor.innerText = appState.author ? `Tác giả: ${appState.author}` : '';
+    }
+  } else {
+    DOM.sheetHeaderBanner.style.display = 'none';
+  }
+}
+
+/**
+ * Thiết lập kiểu khung viền trang trí tờ in
+ */
+function setBorderStyle(style) {
+  appState.borderStyle = style;
+  if (!DOM.printSheet) return;
+
+  DOM.printSheet.classList.remove('border-style-dashed', 'border-style-double', 'border-style-rainbow', 'border-style-minimal');
+  DOM.printSheet.classList.add(`border-style-${style}`);
+
+  if (DOM.borderStyleBtns) {
+    DOM.borderStyleBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-border') === style);
+    });
+  }
+
+  showToast(`Đã đổi viền: ${style}`);
 }
 
 /**

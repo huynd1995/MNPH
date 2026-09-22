@@ -54,6 +54,11 @@
         <span class="btn-text">API Key</span>
         <span class="status-dot" id="apiStatusDot"></span>
       </button>
+
+      <button class="btn btn-outline btn-share" id="btnShareLink" title="Sao chép liên kết đọc thơ cho phụ huynh (Zalo, Facebook)">
+        <i data-lucide="share-2" style="color: #0284c7; width: 16px; height: 16px;"></i>
+        <span class="btn-text">Gửi Phụ Huynh</span>
+      </button>
       
       <button class="btn btn-outline" id="btnPreviewPhone" title="Xem trước giao diện khi phụ huynh quét mã QR">
         <i data-lucide="smartphone" style="color: #4f46e5; width: 16px; height: 16px;"></i>
@@ -77,15 +82,19 @@
     <!-- Left Editor Sidebar with Clean Tabs -->
     <aside class="editor-sidebar" id="editorSidebar">
       
-      <!-- Studio Tabs Header -->
+      <!-- Studio Tabs Header (3 Tabs) -->
       <div class="sidebar-tabs-nav">
         <button type="button" class="sidebar-tab-btn active" id="tabBtnContent" data-tab="tab-content">
-          <i data-lucide="book-open" style="width: 16px; height: 16px;"></i>
-          <span>1. Nội Dung Thơ</span>
+          <i data-lucide="book-open" style="width: 15px; height: 15px;"></i>
+          <span>1. Soạn Thảo</span>
         </button>
         <button type="button" class="sidebar-tab-btn" id="tabBtnStyle" data-tab="tab-style">
-          <i data-lucide="sliders" style="width: 16px; height: 16px;"></i>
-          <span>2. Khổ Giấy & QR</span>
+          <i data-lucide="palette" style="width: 15px; height: 15px;"></i>
+          <span>2. Khổ & Màu</span>
+        </button>
+        <button type="button" class="sidebar-tab-btn" id="tabBtnDecor" data-tab="tab-decor">
+          <i data-lucide="sparkles" style="width: 15px; height: 15px;"></i>
+          <span>3. Trang Trí</span>
         </button>
       </div>
 
@@ -124,6 +133,15 @@
                 <i data-lucide="key" style="width: 12px; height: 12px;"></i>
                 <span>Cài API Key</span>
               </button>
+            </div>
+
+            <!-- Bộ lọc chủ đề mầm non -->
+            <div class="category-filter-wrapper">
+              <div class="category-filter-header">
+                <span class="category-filter-label"><i data-lucide="tag" style="width: 12px; height: 12px;"></i> Chủ đề:</span>
+                <span class="category-filter-hint">Bấm để lọc nhanh</span>
+              </div>
+              <div class="category-chips-list" id="categoryChipsList"></div>
             </div>
 
             <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
@@ -298,16 +316,35 @@
             </div>
           </div>
 
-          <!-- 1-Chạm Bộ màu mầm non -->
+          <!-- 1-Chạm Bộ màu mầm non (8 Bảng Màu Rực Rỡ) -->
           <div class="form-group">
-            <label class="form-label">Bộ màu chủ đề mầm non</label>
-            <div class="theme-pill-grid">
+            <div class="form-label-row">
+              <label class="form-label" style="margin:0;">Bộ màu chủ đề mầm non (8 bảng màu)</label>
+              <span class="badge-color-count">8 Themes</span>
+            </div>
+            <div class="theme-pill-grid theme-pill-grid-8">
               <button type="button" class="theme-pill active" data-theme="default" title="Chuẩn Mầm Non (Xanh Dương & Hồng Đỏ)">
                 <div class="theme-dots">
                   <span style="background: #1d4ed8;"></span>
                   <span style="background: #be123c;"></span>
                 </div>
                 <span class="theme-name">Chuẩn</span>
+              </button>
+
+              <button type="button" class="theme-pill" data-theme="rainbow" title="Cầu Vồng Tuổi Thơ (Xanh Biển & Vàng Cam)">
+                <div class="theme-dots">
+                  <span style="background: #0284c7;"></span>
+                  <span style="background: #f59e0b;"></span>
+                </div>
+                <span class="theme-name">Cầu vồng</span>
+              </button>
+
+              <button type="button" class="theme-pill" data-theme="sunshine" title="Mặt Trời Tươi Vui (Cam Nắng & Đỏ Tươi)">
+                <div class="theme-dots">
+                  <span style="background: #ea580c;"></span>
+                  <span style="background: #e11d48;"></span>
+                </div>
+                <span class="theme-name">Mặt trời</span>
               </button>
               
               <button type="button" class="theme-pill" data-theme="nature" title="Thiên Nhiên (Xanh Lá & Cam Nắng)">
@@ -332,6 +369,14 @@
                   <span style="background: #0d9488;"></span>
                 </div>
                 <span class="theme-name">Đại dương</span>
+              </button>
+
+              <button type="button" class="theme-pill" data-theme="galaxy" title="Ngân Hà Khám Phá (Tím Vũ Trụ & Xanh Neon)">
+                <div class="theme-dots">
+                  <span style="background: #4338ca;"></span>
+                  <span style="background: #06b6d4;"></span>
+                </div>
+                <span class="theme-name">Ngân hà</span>
               </button>
               
               <button type="button" class="theme-pill" data-theme="mono" title="Đen Trắng (Tiết kiệm mực in rõ nét)">
@@ -415,6 +460,137 @@
         </div>
       </div>
 
+      <!-- ================= TAB 3: TRANG TRÍ & NÂNG CAO ================= -->
+      <div class="tab-panel" id="tab-decor">
+        
+        <!-- BƯỚC 7: Tiêu đề & Banner Góc Học Liệu trên thẻ in -->
+        <div class="section-card highlight-card">
+          <div class="section-title">
+            <div class="step-badge step-badge-amber">🏷️</div>
+            <div class="step-title-text">
+              <span>Tiêu đề trên thẻ in A4/A5</span>
+              <small>Bổ sung tên bài thơ, tác giả và góc học liệu</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="toggle-card-label" for="toggleShowHeaderBanner">
+              <div class="toggle-card-info">
+                <strong class="toggle-card-title">Bật Tiêu Đề Trên Tờ In</strong>
+                <span class="toggle-card-desc">Hiển thị góc học liệu, tên bài & tác giả ở đầu trang</span>
+              </div>
+              <input type="checkbox" id="toggleShowHeaderBanner" class="custom-toggle-input">
+            </label>
+          </div>
+
+          <div class="sheet-banner-config-group" id="sheetBannerConfigGroup" style="display: none;">
+            <div class="form-group">
+              <label class="form-label" for="inputSheetBadgeText">Tên góc học liệu / Trường & Lớp</label>
+              <input type="text" id="inputSheetBadgeText" class="form-input" value="GÓC THƠ MẦM NON" placeholder="VD: GÓC THƠ BÉ YÊU, TRƯỜNG MN HOA MAI...">
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="checkbox-simple-label">
+                  <input type="checkbox" id="toggleShowBannerTitle" checked>
+                  <span>Hiện tên bài thơ</span>
+                </label>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-simple-label">
+                  <input type="checkbox" id="toggleShowBannerAuthor" checked>
+                  <span>Hiện tên tác giả</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BƯỚC 8: Icon / Sticker nhận diện tâm mã QR -->
+        <div class="section-card">
+          <div class="section-title">
+            <div class="step-badge step-badge-pink">✨</div>
+            <div class="step-title-text">
+              <span>Huy hiệu / Sticker tâm mã QR</span>
+              <small>Gắn biểu tượng nhận diện ngộ nghĩnh chính giữa QR</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="toggle-card-label" for="toggleCenterQrIcon">
+              <div class="toggle-card-info">
+                <strong class="toggle-card-title">Huy hiệu trung tâm QR</strong>
+                <span class="toggle-card-desc">Tăng độ nhận diện, vẫn quét mã 100% siêu nhạy</span>
+              </div>
+              <input type="checkbox" id="toggleCenterQrIcon" class="custom-toggle-input" checked>
+            </label>
+          </div>
+
+          <div class="form-group" id="centerIconStyleGroup">
+            <label class="form-label">Chọn cặp biểu tượng:</label>
+            <div class="icon-preset-grid">
+              <button type="button" class="btn-icon-preset active" data-icon="standard" id="btnIconStandard">
+                <span class="icon-preset-emoji">📖 🎵</span>
+                <span class="icon-preset-name">Sách & Nhạc</span>
+              </button>
+              <button type="button" class="btn-icon-preset" data-icon="star" id="btnIconStar">
+                <span class="icon-preset-emoji">⭐ 🌟</span>
+                <span class="icon-preset-name">Ngôi sao</span>
+              </button>
+              <button type="button" class="btn-icon-preset" data-icon="flower" id="btnIconFlower">
+                <span class="icon-preset-emoji">🌸 🌼</span>
+                <span class="icon-preset-name">Bông hoa</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BƯỚC 9: Khung viền trang trí tờ in nghệ thuật -->
+        <div class="section-card">
+          <div class="section-title">
+            <div class="step-badge step-badge-purple">🖼️</div>
+            <div class="step-title-text">
+              <span>Kiểu khung viền trang trí</span>
+              <small>Đường viền bao quanh toàn bộ thẻ in</small>
+            </div>
+          </div>
+
+          <div class="border-style-grid">
+            <button type="button" class="border-style-btn active" data-border="dashed" id="btnBorderDashed">
+              <div class="border-sample border-sample-dashed"></div>
+              <div class="border-info">
+                <strong>Nét đứt mầm non</strong>
+                <small>Dễ thương & tươi vui</small>
+              </div>
+            </button>
+
+            <button type="button" class="border-style-btn" data-border="double" id="btnBorderDouble">
+              <div class="border-sample border-sample-double"></div>
+              <div class="border-info">
+                <strong>Viền đôi trang nhã</strong>
+                <small>Thanh lịch & tinh tế</small>
+              </div>
+            </button>
+
+            <button type="button" class="border-style-btn" data-border="rainbow" id="btnBorderRainbow">
+              <div class="border-sample border-sample-rainbow"></div>
+              <div class="border-info">
+                <strong>Cầu vồng rực rỡ</strong>
+                <small>Nổi bật & sinh động</small>
+              </div>
+            </button>
+
+            <button type="button" class="border-style-btn" data-border="minimal" id="btnBorderMinimal">
+              <div class="border-sample border-sample-minimal"></div>
+              <div class="border-info">
+                <strong>Tối giản mộc mạc</strong>
+                <small>Tiết kiệm mực in</small>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- HERO ACTION BUTTON BOTTOM BAR -->
       <div class="section-card action-card">
         <button type="button" class="btn-generate-main" id="btnGenerateQR" title="Tạo hoặc vẽ lại toàn bộ mã QR từ bài thơ và YouTube">
@@ -449,6 +625,18 @@
         </div>
 
         <div class="toolbar-right">
+          <!-- Zoom Controls -->
+          <div class="zoom-controls">
+            <button type="button" class="btn-zoom" id="btnZoomOut" title="Thu nhỏ">
+              <i data-lucide="minus" style="width: 12px; height: 12px;"></i>
+            </button>
+            <span class="zoom-val" id="zoomVal">100%</span>
+            <button type="button" class="btn-zoom" id="btnZoomIn" title="Phóng to">
+              <i data-lucide="plus" style="width: 12px; height: 12px;"></i>
+            </button>
+            <button type="button" class="btn-zoom-fit" id="btnZoomFit" title="Tự động vừa màn hình">Vừa</button>
+          </div>
+
           <!-- Mobile switch to edit -->
           <button type="button" class="btn-toolbar-action mobile-only" id="btnMobileBackToEdit">
             <i data-lucide="edit-3" style="width: 13px; height: 13px;"></i>
@@ -466,8 +654,15 @@
       <div class="sheet-viewport" id="sheetViewport">
         <div class="sheet-container-scaler" id="sheetScaler">
           <!-- Target Print Sheet Container (Switchable A4 / A5) -->
-          <div class="print-sheet paper-sheet-a4" id="printSheet">
+          <div class="print-sheet paper-sheet-a4 border-style-dashed" id="printSheet">
             
+            <!-- Optional Top Header Banner on Card -->
+            <div class="sheet-header-banner" id="sheetHeaderBanner" style="display: none;">
+              <div class="sheet-banner-badge" id="sheetBannerBadge">GÓC THƠ MẦM NON</div>
+              <h2 class="sheet-banner-title" id="sheetBannerTitle">Ngôi Nhà</h2>
+              <p class="sheet-banner-author" id="sheetBannerAuthor">Tác giả: Mai Ngọc Thể</p>
+            </div>
+
             <!-- Central QR Area -->
             <div class="sheet-body">
               <!-- Mode 1: Single Large QR -->

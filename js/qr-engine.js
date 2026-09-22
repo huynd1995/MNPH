@@ -116,20 +116,23 @@ const QREngine = {
    * Sinh mã QR vào container
    * @param {HTMLElement|string} targetElement - DOM element hoặc selector
    * @param {string} text - Đường dẫn/nội dung mã QR
-   * @param {Object} options - Tùy biến màu sắc, kích thước
+   * @param {Object} options - Tùy biến màu sắc, kích thước, icon tâm QR
    */
   renderQR(targetElement, text, options = {}) {
     const container = typeof targetElement === 'string' ? document.querySelector(targetElement) : targetElement;
     if (!container) return;
 
     container.innerHTML = ''; // Xóa QR cũ
+    container.style.position = 'relative';
 
     const size = options.size || 180;
     const colorDark = options.colorDark || '#1e3a8a';
     const colorLight = options.colorLight || '#ffffff';
-    const correctLevel = QRCode.CorrectLevel ? QRCode.CorrectLevel.M : 0;
+    // Sử dụng mức sửa lỗi M hoặc H để khi chèn icon ở tâm vẫn quét siêu nhạy
+    const correctLevel = (QRCode && QRCode.CorrectLevel) ? (options.centerIcon ? QRCode.CorrectLevel.H : QRCode.CorrectLevel.M) : 0;
 
-    // Sử dụng QRCode.js nếu có sẵn
+    // 1. Sinh QR Code
+    let qrRendered = false;
     if (window.QRCode) {
       try {
         new QRCode(container, {
@@ -140,21 +143,64 @@ const QREngine = {
           colorLight: colorLight,
           correctLevel: correctLevel
         });
-        return;
+        qrRendered = true;
       } catch (e) {
         console.error("QRCode.js render error:", e);
       }
     }
 
-    // Fallback: Sử dụng Google Chart API hoặc QRServer API nếu QRCode.js chưa tải xong
-    const encodedText = encodeURIComponent(text);
-    const img = document.createElement('img');
-    const fgColorHex = colorDark.replace('#', '');
-    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedText}&color=${fgColorHex}&bgcolor=FFFFFF&margin=0`;
-    img.alt = "QR Code";
-    img.style.width = size + 'px';
-    img.style.height = size + 'px';
-    img.style.display = 'block';
-    container.appendChild(img);
+    // Fallback nếu QRCode.js gặp lỗi
+    if (!qrRendered) {
+      const encodedText = encodeURIComponent(text);
+      const img = document.createElement('img');
+      const fgColorHex = colorDark.replace('#', '');
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedText}&color=${fgColorHex}&bgcolor=FFFFFF&margin=0`;
+      img.alt = "QR Code";
+      img.style.width = size + 'px';
+      img.style.height = size + 'px';
+      img.style.display = 'block';
+      container.appendChild(img);
+    }
+
+    // 2. Chèn icon/sticker ở tâm mã QR nếu được kích hoạt
+    if (options.centerIcon) {
+      const badgeSize = Math.max(24, Math.round(size * 0.22));
+      const iconSize = Math.round(badgeSize * 0.6);
+      const badge = document.createElement('div');
+      badge.className = 'qr-center-badge';
+      badge.style.position = 'absolute';
+      badge.style.top = '50%';
+      badge.style.left = '50%';
+      badge.style.transform = 'translate(-50%, -50%)';
+      badge.style.width = `${badgeSize}px`;
+      badge.style.height = `${badgeSize}px`;
+      badge.style.borderRadius = '50%';
+      badge.style.backgroundColor = '#ffffff';
+      badge.style.border = `2.5px solid ${colorDark}`;
+      badge.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+      badge.style.display = 'flex';
+      badge.style.alignItems = 'center';
+      badge.style.justifyContent = 'center';
+      badge.style.pointerEvents = 'none';
+      badge.style.zIndex = '3';
+
+      let svgIcon = '';
+      if (options.centerIcon === 'book') {
+        // Biểu tượng sách đọc thơ
+        svgIcon = `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="${colorDark}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>`;
+      } else if (options.centerIcon === 'music') {
+        // Biểu tượng nốt nhạc YouTube
+        svgIcon = `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="${colorDark}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+      } else if (options.centerIcon === 'star') {
+        // Biểu tượng ngôi sao mầm non
+        svgIcon = `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="${colorDark}" stroke="${colorDark}" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+      } else {
+        // Mặc định nốt nhạc hoặc bông hoa
+        svgIcon = `<svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="${colorDark}" stroke-width="2.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`;
+      }
+
+      badge.innerHTML = svgIcon;
+      container.appendChild(badge);
+    }
   }
 };

@@ -247,3 +247,10 @@ function searchPoems(keyword) {
     p.content.toLowerCase().includes(lower)
   );
 }
+
+// Lấy danh sách các chủ đề mầm non
+function getPoemCategories() {
+  const cats = new Set(POEMS_DATABASE.map(p => p.category).filter(Boolean));
+  return ['Tất cả', ...Array.from(cats)];
+}
+
